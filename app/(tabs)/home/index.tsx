@@ -1,78 +1,64 @@
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, Image } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import {
+  FlatList,
+  Image,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
-// Serie viste
 const seriesList = [
   {
     id: "1",
-    title: "Breaking Bad",
-    image: "https://via.placeholder.com/120x180.png?text=Breaking+Bad",
+    titolo: "Stranger Things",
+    image: "https://i.imgur.com/1.jpg",
   },
   {
     id: "2",
-    title: "The Mandalorian",
-    image: "https://via.placeholder.com/120x180.png?text=Mandalorian",
-  },
-  {
-    id: "3",
-    title: "Stranger Things",
-    image: "https://via.placeholder.com/120x180.png?text=Stranger+Things",
-  },
-  {
-    id: "4",
-    title: "Loki",
-    image: "https://via.placeholder.com/120x180.png?text=Loki",
+    titolo: "Breaking Bad",
+    image: "https://i.imgur.com/2.jpg",
   },
 ];
 
-// Suggeriti per te
 const suggestedSeries = [
   {
-    id: "5",
-    title: "The Witcher",
-    image: "https://via.placeholder.com/120x180.png?text=Witcher",
+    id: "3",
+    titolo: "The Witcher",
+    image: "https://i.imgur.com/3.jpg",
   },
   {
-    id: "6",
-    title: "Dark",
-    image: "https://via.placeholder.com/120x180.png?text=Dark",
-  },
-  {
-    id: "7",
-    title: "The Boys",
-    image: "https://via.placeholder.com/120x180.png?text=Boys",
-  },
-  {
-    id: "8",
-    title: "The Crown",
-    image: "https://via.placeholder.com/120x180.png?text=Crown",
+    id: "4",
+    titolo: "The Crown",
+    image: "https://i.imgur.com/4.jpg",
   },
 ];
 
 export default function HomeScreen() {
   const router = useRouter();
 
-
-
   const renderItem = ({ item }: any) => (
-    <View style={styles.card}>
+    <TouchableOpacity
+      style={styles.card}
+      onPress={() => router.push(`/serie/${item.id}`)}
+    >
       <Image source={{ uri: item.image }} style={styles.image} />
       <Text style={styles.title} numberOfLines={2}>
-        {item.title}
+        {item.titolo}
       </Text>
-    </View>
+    </TouchableOpacity>
   );
 
   return (
     <View style={styles.container}>
       {/* Bottone Aggiungi */}
-       <TouchableOpacity
-  style={styles.addButton}
-  onPress={() => router.push("/(tabs)/home/aggiungi")}
->
-  <Ionicons name="add" size={26} color="white" />
-</TouchableOpacity>
+      <TouchableOpacity
+        style={styles.addButton}
+        onPress={() => router.push("/(tabs)/home/aggiungi")}
+      >
+        <Ionicons name="add" size={26} color="white" />
+      </TouchableOpacity>
 
       <Text style={styles.sectionTitle}>Le tue Serie TV viste</Text>
       <FlatList
@@ -102,7 +88,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingTop: 60,
     paddingHorizontal: 16,
-    backgroundColor: "#fff",
+    backgroundColor: "#0f0f2a",
   },
   addButton: {
     position: "absolute",
@@ -119,6 +105,7 @@ const styles = StyleSheet.create({
     marginTop: 20,
     marginBottom: 10,
     textAlign: "left",
+    color: "#fff",
   },
   horizontalList: {
     paddingVertical: 10,
@@ -138,5 +125,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 13,
     textAlign: "center",
+    color: "#fff",
   },
 });

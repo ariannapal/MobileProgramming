@@ -1,15 +1,15 @@
 import { useRouter } from "expo-router";
 import { Button, Text, View } from "react-native";
 
-export default function Home() {
+export default function HomeScreen() {
   const router = useRouter();
 
   return (
     <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-      <Text>Sezione Home</Text>
+      <Text style={{ fontSize: 20 }}>Home</Text>
       <Button
-        title="Vai ai dettagli"
-        onPress={() => router.push("/dettagli")}
+        title="Vai alla schermata extra"
+        onPress={() => router.push("/(tabs)/home/extra")}
       />
     </View>
   );

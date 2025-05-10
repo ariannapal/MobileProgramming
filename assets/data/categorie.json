@@ -1,0 +1,13 @@
+{
+    "piattaforme": [
+      { "id": "1", "nome": "Netflix", "count": 4 },
+      { "id": "2", "nome": "Prime Video", "count": 2 },
+      { "id": "3", "nome": "Disney+", "count": 1 }
+    ],
+    "generi": [
+      { "id": "4", "nome": "Azione", "count": 3 },
+      { "id": "5", "nome": "Commedia", "count": 2 },
+      { "id": "6", "nome": "Fantasy", "count": 2 }
+    ]
+  }
+  

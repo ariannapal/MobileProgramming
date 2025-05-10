@@ -1,25 +1,71 @@
-import React from "react";
-import { FlatList, StyleSheet, Text, View } from "react-native";
-
-const preferiteMock = [
-  { id: "1", titolo: "Breaking Bad" },
-  { id: "2", titolo: "Stranger Things" },
-  { id: "3", titolo: "Dark" },
-];
+import { useFocusEffect } from "@react-navigation/native";
+import { useRouter } from "expo-router";
+import React, { useState } from "react";
+import {
+  FlatList,
+  Image,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { getFavorites } from "../utils/favoritesStorage";
+type FavoriteItem = {
+  id: string;
+  titolo?: string;
+  title?: string;
+  image?: string;
+  poster_path?: string;
+};
 
 export default function PreferitiScreen() {
+  const [favorites, setFavorites] = useState<FavoriteItem[]>([]);
+
+  const router = useRouter();
+
+  // Carica i preferiti quando la schermata è in focus
+  useFocusEffect(
+    React.useCallback(() => {
+      const loadFavorites = async () => {
+        const data = await getFavorites();
+        setFavorites(data);
+      };
+
+      loadFavorites();
+    }, [])
+  );
+
+  const renderItem = ({ item }: any) => (
+    <TouchableOpacity
+      style={styles.card}
+      onPress={() => router.push(`/serie/${item.id}`)}
+    >
+      <Image
+        source={{ uri: item.image || item.poster_path }}
+        style={styles.image}
+      />
+      <Text style={styles.title} numberOfLines={2}>
+        {item.titolo || item.title}
+      </Text>
+    </TouchableOpacity>
+  );
+
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Le tue serie preferite</Text>
-      <FlatList
-        data={preferiteMock}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <View style={styles.card}>
-            <Text style={styles.cardText}>{item.titolo}</Text>
-          </View>
-        )}
-      />
+      <Text style={styles.sectionTitle}>Le tue Serie TV preferite</Text>
+
+      {favorites.length === 0 ? (
+        <Text style={styles.empty}>Non hai ancora aggiunto preferiti</Text>
+      ) : (
+        <FlatList
+          data={favorites}
+          keyExtractor={(item) => item.id.toString()}
+          horizontal
+          renderItem={renderItem}
+          contentContainerStyle={styles.horizontalList}
+          showsHorizontalScrollIndicator={false}
+        />
+      )}
     </View>
   );
 }
@@ -27,22 +73,42 @@ export default function PreferitiScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
-    backgroundColor: "#fff",
+    paddingTop: 60,
+    paddingHorizontal: 16,
+    backgroundColor: "#0f0f2a",
   },
-  title: {
-    fontSize: 22,
+  sectionTitle: {
+    fontSize: 20,
     fontWeight: "bold",
-    marginBottom: 16,
-    textAlign: "center",
+    marginTop: 20,
+    marginBottom: 10,
+    textAlign: "left",
+    color: "#fff",
+  },
+  horizontalList: {
+    paddingVertical: 10,
   },
   card: {
-    backgroundColor: "#f1f1f1",
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 12,
+    width: 120,
+    marginRight: 12,
+    alignItems: "center",
   },
-  cardText: {
-    fontSize: 18,
+  image: {
+    width: 120,
+    height: 180,
+    borderRadius: 8,
+    marginBottom: 6,
+    backgroundColor: "#ccc",
+  },
+  title: {
+    fontSize: 13,
+    textAlign: "center",
+    color: "#fff",
+  },
+  empty: {
+    fontSize: 16,
+    color: "#aaa",
+    textAlign: "center",
+    marginTop: 40,
   },
 });

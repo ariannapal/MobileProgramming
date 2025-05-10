@@ -1,13 +1,16 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import React, { useEffect, useState } from "react";
 import {
   Image,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
 } from "react-native";
+import { isFavorite, saveFavorite } from "../utils/favoritesStorage";
 
 const tutteLeSerie = [
   {
@@ -23,9 +26,22 @@ const tutteLeSerie = [
 ];
 
 export default function SerieDettaglioScreen() {
+  const [isFav, setIsFav] = useState(false);
   const { id } = useLocalSearchParams();
   const router = useRouter();
   const serie = tutteLeSerie.find((s) => s.id === id);
+
+  useEffect(() => {
+    if (serie) {
+      isFavorite(serie.id).then(setIsFav);
+    }
+  }, []);
+
+  const toggleFavorite = async () => {
+    await saveFavorite(serie);
+    const updated = await isFavorite(serie.id);
+    setIsFav(updated);
+  };
 
   if (!serie) {
     return (
@@ -43,7 +59,17 @@ export default function SerieDettaglioScreen() {
       </Pressable>
 
       <Image source={{ uri: serie.poster }} style={styles.poster} />
-      <Text style={styles.title}>{serie.titolo}</Text>
+      <View style={styles.titleRow}>
+        <Text style={styles.title}>{serie.titolo}</Text>
+        <TouchableOpacity onPress={toggleFavorite}>
+          <Ionicons
+            name={isFav ? "star" : "star-outline"}
+            size={24}
+            color="gold"
+            style={styles.favoriteIcon}
+          />
+        </TouchableOpacity>
+      </View>
       <Text style={styles.meta}>
         ⭐ {serie.rating} · {serie.anno}
       </Text>
@@ -57,7 +83,6 @@ const styles = StyleSheet.create({
   back: { flexDirection: "row", alignItems: "center", marginBottom: 12 },
   backText: { color: "#fff", marginLeft: 4 },
   poster: { width: "100%", height: 320, borderRadius: 12, marginBottom: 16 },
-  title: { color: "#fff", fontSize: 24, fontWeight: "bold" },
   meta: { color: "#ccc", fontSize: 15, marginBottom: 10 },
   desc: { color: "#ddd", fontSize: 16, lineHeight: 22 },
   center: {
@@ -65,5 +90,24 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "#0f0f2a",
+  },
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginVertical: 10,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#fff",
+    flex: 1,
+    marginRight: 10,
+  },
+  icon: {
+    paddingHorizontal: 4,
+  },
+  favoriteIcon: {
+    paddingHorizontal: 4,
   },
 });

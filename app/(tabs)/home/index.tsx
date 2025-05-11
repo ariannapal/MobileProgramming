@@ -1,3 +1,4 @@
+import serieJson from "@/assets/data/serie.json"; // ✅ Serie viste da JSON
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
@@ -11,56 +12,33 @@ import {
   View,
 } from "react-native";
 
-// Lista di serie viste
-const seriesList = [
-  {
-    id: "1",
-    titolo: "Stranger Things",
-    image: "https://i.imgur.com/1.jpg",
-  },
-  {
-    id: "2",
-    titolo: "Breaking Bad",
-    image: "https://i.imgur.com/2.jpg",
-  },
-];
-
+// Suggeriti per te (fissi per ora)
 const initialSuggestedSeries = [
   {
-    id: "3",
-    titolo: "The Witcher",
-    image: "https://i.imgur.com/3.jpg",
-    categoria: "Fantasy",
-    piattaforma: "Netflix",
-  },
-  {
-    id: "4",
+    id: "100",
     titolo: "The Crown",
     image: "https://i.imgur.com/4.jpg",
     categoria: "Drama",
     piattaforma: "Netflix",
   },
+  {
+    id: "101",
+    titolo: "The Mandalorian",
+    image: "https://i.imgur.com/8.jpg",
+    categoria: "Sci-Fi",
+    piattaforma: "Disney+",
+  },
 ];
 
 export default function HomeScreen() {
   const router = useRouter();
+  const [searchQuery, setSearchQuery] = useState("");
   const [suggestedSeries, setSuggestedSeries] = useState(
     initialSuggestedSeries
   );
-  const [searchQuery, setSearchQuery] = useState("");
+  const [serieViste] = useState(serieJson); // ✅ Serie viste dal JSON
 
-  const addSeries = () => {
-    const newSeries = {
-      id: `${suggestedSeries.length + 1}`,
-      titolo: "Nuova Serie",
-      image: "https://i.imgur.com/5.jpg",
-      categoria: "Mistero",
-      piattaforma: "Disney+",
-    };
-    setSuggestedSeries((prev) => [...prev, newSeries]);
-  };
-
-  const filteredSeries = suggestedSeries.filter((serie) => {
+  const filteredViste = serieViste.filter((serie) => {
     const query = searchQuery.toLowerCase();
     return (
       serie.titolo.toLowerCase().includes(query) ||
@@ -72,7 +50,10 @@ export default function HomeScreen() {
   const renderItem = ({ item }: any) => {
     if (item.id === "addButton") {
       return (
-        <TouchableOpacity style={styles.addButtonCard} onPress={addSeries}>
+        <TouchableOpacity
+          style={styles.addButtonCard}
+          onPress={() => router.push("/(tabs)/home/aggiungi")}
+        >
           <Ionicons name="add-circle" size={50} color="#fff" />
           <Text style={styles.addButtonText}>Aggiungi una serie</Text>
         </TouchableOpacity>
@@ -94,11 +75,11 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Search + Add Row */}
+      {/* 🔍 Barra di ricerca + ➕ */}
       <View style={styles.searchRow}>
         <TextInput
           style={styles.searchInput}
-          placeholder="Cerca per nome, categoria o piattaforma"
+          placeholder="Cerca tra le serie viste"
           placeholderTextColor="#aaa"
           value={searchQuery}
           onChangeText={setSearchQuery}
@@ -111,9 +92,10 @@ export default function HomeScreen() {
         </TouchableOpacity>
       </View>
 
+      {/* ✅ Serie viste */}
       <Text style={styles.sectionTitle}>Le tue Serie TV viste</Text>
       <FlatList
-        data={seriesList}
+        data={filteredViste}
         keyExtractor={(item) => item.id}
         horizontal
         renderItem={renderItem}
@@ -121,9 +103,10 @@ export default function HomeScreen() {
         showsHorizontalScrollIndicator={false}
       />
 
+      {/* ✅ Suggeriti per te */}
       <Text style={styles.sectionTitle}>Suggeriti per te</Text>
       <FlatList
-        data={[...filteredSeries, { id: "addButton" }]}
+        data={[...suggestedSeries, { id: "addButton" }]}
         keyExtractor={(item) => item.id}
         horizontal
         renderItem={renderItem}
@@ -160,21 +143,6 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 50,
   },
-  addButtonCard: {
-    width: 120,
-    height: 180,
-    marginRight: 12,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 8,
-    backgroundColor: "#444",
-  },
-  addButtonText: {
-    marginTop: 8,
-    color: "#fff",
-    fontSize: 14,
-    textAlign: "center",
-  },
   sectionTitle: {
     fontSize: 20,
     fontWeight: "bold",
@@ -202,5 +170,20 @@ const styles = StyleSheet.create({
     fontSize: 13,
     textAlign: "center",
     color: "#fff",
+  },
+  addButtonCard: {
+    width: 120,
+    height: 180,
+    marginRight: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 8,
+    backgroundColor: "#444",
+  },
+  addButtonText: {
+    marginTop: 8,
+    color: "#fff",
+    fontSize: 14,
+    textAlign: "center",
   },
 });

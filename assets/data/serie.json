@@ -1,0 +1,24 @@
+[
+    {
+      "id": "1",
+      "titolo": "Stranger Things",
+      "image": "https://i.imgur.com/1.jpg",
+      "categoria": "Fantascienza",
+      "piattaforma": "Netflix"
+    },
+    {
+      "id": "2",
+      "titolo": "Breaking Bad",
+      "image": "https://i.imgur.com/2.jpg",
+      "categoria": "Dramma",
+      "piattaforma": "Netflix"
+    },
+    {
+      "id": "3",
+      "titolo": "The Witcher",
+      "image": "https://i.imgur.com/3.jpg",
+      "categoria": "Fantasy",
+      "piattaforma": "Netflix"
+    }
+  ]
+  

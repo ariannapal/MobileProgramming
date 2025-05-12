@@ -1,4 +1,3 @@
-import serieJson from "@/assets/data/serie.json";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect } from "@react-navigation/native";
@@ -42,18 +41,30 @@ const initialSuggestedSeries = [
 
 export default function HomeScreen() {
   const [serieViste, setSerieViste] = useState<Serie[]>([]);
-  const [suggestedSeries, setSuggestedSeries] = useState(initialSuggestedSeries);
+  const [suggestedSeries, setSuggestedSeries] = useState(
+    initialSuggestedSeries
+  );
   const router = useRouter();
 
   // 🔁 Carica le serie viste ogni volta che la schermata è attiva
   useFocusEffect(
     useCallback(() => {
       const loadSerie = async () => {
-        const data = serieJson;  // Ottieni il JSON
-        // Filtra le serie con stato "In Corso"
-        const serieInCorso = data.filter((serie: any) => serie.stato === "in corso");
-        setSerieViste(serieInCorso);
+        try {
+          const json = await AsyncStorage.getItem("serie.json");
+          const data: Serie[] = json ? JSON.parse(json) : [];
+
+          // Filtra solo quelle "in corso"
+          const serieInCorso = data.filter(
+            (serie) => serie.stato?.toLowerCase().trim() === "in corso"
+          );
+
+          setSerieViste(serieInCorso);
+        } catch (err) {
+          console.error("Errore nel caricamento delle serie:", err);
+        }
       };
+
       loadSerie();
     }, [])
   );
@@ -76,7 +87,16 @@ export default function HomeScreen() {
         style={styles.card}
         onPress={() => router.push(`/serie/${item.id}`)}
       >
-        <Image source={{ uri: item.image }} style={styles.image} />
+        <Image
+          source={{
+            uri:
+              item.poster_path && item.poster_path.startsWith("/")
+                ? `https://image.tmdb.org/t/p/w185${item.poster_path}`
+                : item.image || "https://via.placeholder.com/120x180?text=?",
+          }}
+          style={styles.image}
+        />
+
         <Text style={styles.title} numberOfLines={2}>
           {item.titolo}
         </Text>
@@ -197,4 +217,3 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
 });
-

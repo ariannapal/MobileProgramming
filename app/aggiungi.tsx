@@ -329,8 +329,6 @@ export default function AggiungiModificaScreen() {
   );
 }
 
-
-
 const styles = StyleSheet.create({
   container: {
     backgroundColor: "#0f0f2a",
@@ -409,5 +407,3 @@ const styles = StyleSheet.create({
     backgroundColor: "#0f0f2a",
   },
 });
-
-

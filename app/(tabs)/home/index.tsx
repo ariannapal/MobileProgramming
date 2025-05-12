@@ -1,7 +1,9 @@
 import serieJson from "@/assets/data/serie.json";
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useFocusEffect } from "@react-navigation/native";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useCallback, useState } from "react";
 import {
   FlatList,
   Image,
@@ -10,6 +12,14 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+type Serie = {
+  id?: string;
+  titolo: string;
+  genere?: string;
+  piattaforma?: string;
+  poster_path?: string;
+  image?: string;
+};
 
 // Suggeriti per te
 const initialSuggestedSeries = [
@@ -17,22 +27,45 @@ const initialSuggestedSeries = [
     id: "100",
     titolo: "The Crown",
     image: "https://i.imgur.com/4.jpg",
-    categoria: "Drama",
+    genere: "Drama",
     piattaforma: "Netflix",
   },
   {
     id: "101",
     titolo: "The Mandalorian",
     image: "https://i.imgur.com/8.jpg",
-    categoria: "Sci-Fi",
+    genere: "Sci-Fi",
     piattaforma: "Disney+",
   },
 ];
 
 export default function HomeScreen() {
+  const [serieViste, setSerieViste] = useState<Serie[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [suggestedSeries, setSuggestedSeries] = useState(
+    initialSuggestedSeries
+  );
   const router = useRouter();
-  const [suggestedSeries, setSuggestedSeries] = useState(initialSuggestedSeries);
-  const [serieViste] = useState(serieJson);
+
+  // 🔁 Carica le serie viste ogni volta che la schermata è attiva
+  useFocusEffect(
+    useCallback(() => {
+      const loadSerie = async () => {
+        const data = await AsyncStorage.getItem("serie.json");
+        setSerieViste(data ? JSON.parse(data) : []);
+      };
+      loadSerie();
+    }, [])
+  );
+
+  const filteredViste = serieViste.filter((serie) => {
+    const query = searchQuery.toLowerCase();
+    return (
+      (serie.titolo?.toLowerCase().includes(query) ?? false) ||
+      (serie.genere?.toLowerCase().includes(query) ?? false) ||
+      (serie.piattaforma?.toLowerCase().includes(query) ?? false)
+    );
+  });
 
   const renderItem = ({ item }: any) => {
     if (item.id === "addButton") {
@@ -83,7 +116,7 @@ export default function HomeScreen() {
       <Text style={styles.sectionTitle}>Le tue Serie TV viste</Text>
       <FlatList
         data={serieViste}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item, index) => item.id || item.titolo + index}
         horizontal
         renderItem={renderItem}
         contentContainerStyle={styles.horizontalList}
@@ -93,7 +126,7 @@ export default function HomeScreen() {
       {/* Suggeriti per te */}
       <Text style={styles.sectionTitle}>Suggeriti per te</Text>
       <FlatList
-        data={[...suggestedSeries, { id: "addButton" }]}
+        data={suggestedSeries}
         keyExtractor={(item) => item.id}
         horizontal
         renderItem={renderItem}

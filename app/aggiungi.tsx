@@ -1,6 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Image,
@@ -14,10 +14,12 @@ import {
   View,
 } from "react-native";
 
-const generiDisponibili = ["Fantascienza", "Commedia", "Dramma", "Thriller"];
-const piattaforme = ["Netflix", "Disney+", "Amazon Prime", "HBO"];
-
 export default function AggiungiModificaScreen() {
+  const [categorieGeneri, setCategorieGeneri] = useState<string[]>([]);
+  const [categoriePiattaforme, setCategoriePiattaforme] = useState<string[]>(
+    []
+  );
+
   const [titolo, setTitolo] = useState("");
   const [risultati, setRisultati] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -31,41 +33,117 @@ export default function AggiungiModificaScreen() {
     stato: "In corso",
     stagioni: "",
     episodi: "",
-    poster_path: "", // AGGIUNTO!
+    poster_path: "",
+    rating: "",
+    anno: "",
   });
+
+  useEffect(() => {
+    const caricaCategorie = async () => {
+      try {
+        const data = await AsyncStorage.getItem("categorie_dati");
+        if (data) {
+          const parsed = JSON.parse(data);
+          setCategorieGeneri(parsed.generi.map((g: any) => g.nome));
+          setCategoriePiattaforme(parsed.piattaforme.map((p: any) => p.nome));
+        }
+      } catch (err) {
+        console.error("Errore nel caricamento categorie:", err);
+      }
+    };
+
+    caricaCategorie();
+  }, []);
+
   const router = useRouter();
 
   const fetchTVShows = async () => {
     setLoading(true);
     setSelectedShow(null);
-    const res = await fetch(
-      `https://api.themoviedb.org/3/search/tv?query=${encodeURIComponent(
-        titolo
-      )}&language=it-IT`,
-      {
-        headers: {
-          Authorization:
-            "Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiIxYWMxMzU4NjY3ZjcyODgzNWRhZjk2YjAxZDZkODVhMCIsIm5iZiI6MTc0Njc3ODg1MC4zMTcsInN1YiI6IjY4MWRiYWUyM2E2OGExMTcyOTYzYmQxNiIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.I6RbtWrCPo0n0YWNYNfGs0wnAcIrG0n5t4KYh0W7Am4",
-          accept: "application/json",
-        },
+
+    try {
+      const [res, genresRes] = await Promise.all([
+        fetch(
+          `https://api.themoviedb.org/3/search/tv?query=${encodeURIComponent(
+            titolo
+          )}&language=it-IT`,
+          {
+            headers: {
+              Authorization:
+                "Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiIxYWMxMzU4NjY3ZjcyODgzNWRhZjk2YjAxZDZkODVhMCIsIm5iZiI6MTc0Njc3ODg1MC4zMTcsInN1YiI6IjY4MWRiYWUyM2E2OGExMTcyOTYzYmQxNiIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.I6RbtWrCPo0n0YWNYNfGs0wnAcIrG0n5t4KYh0W7Am4",
+              accept: "application/json",
+            },
+          }
+        ),
+        fetch(`https://api.themoviedb.org/3/genre/tv/list?language=it-IT`, {
+          headers: {
+            Authorization:
+              "Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiIxYWMxMzU4NjY3ZjcyODgzNWRhZjk2YjAxZDZkODVhMCIsIm5iZiI6MTc0Njc3ODg1MC4zMTcsInN1YiI6IjY4MWRiYWUyM2E2OGExMTcyOTYzYmQxNiIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.I6RbtWrCPo0n0YWNYNfGs0wnAcIrG0n5t4KYh0W7Am4",
+            accept: "application/json",
+          },
+        }),
+      ]);
+
+      if (!res.ok || !genresRes.ok) {
+        throw new Error("Errore nella fetch TMDb");
       }
-    );
-    const data = await res.json();
-    setRisultati(data.results || []);
+
+      const data = await res.json();
+      const genresData = await genresRes.json();
+
+      const genresMap: Record<number, string> = {};
+
+      if (Array.isArray(genresData.genres)) {
+        genresData.genres.forEach((g: { id: number; name: string }) => {
+          genresMap[g.id] = g.name;
+        });
+      } else {
+        console.warn("⚠️ genresData.genres non trovato:", genresData);
+      }
+
+      const resultsWithGenre = (data.results || []).map((item: any) => ({
+        ...item,
+        genere_nome:
+          item.genre_ids && item.genre_ids.length > 0
+            ? genresMap[item.genre_ids[0]]
+            : "",
+      }));
+
+      setRisultati(resultsWithGenre);
+    } catch (err) {
+      console.error("Errore nella fetch TMDb:", err);
+    }
+
     setLoading(false);
   };
 
+<<<<<<< HEAD:app/(tabs)/home/aggiungi.tsx
   const handleSelectShow = async (item: any) => {
+=======
+  const handleSelectShow = (item: any) => {
+    const genereAuto = item.genere_nome || "";
+
+    // 🔄 Se il genere non è tra quelli disponibili, aggiungilo
+    if (genereAuto && !categorieGeneri.includes(genereAuto)) {
+      setCategorieGeneri((prev) => [...prev, genereAuto]);
+    }
+
+>>>>>>> 4a29e78b7e58e59f1070bca61e7f23883d3d5446:app/aggiungi.tsx
     setSelectedShow(item);
     setForm({
       titolo: item.name,
       trama: item.overview,
-      genere: "",
+      genere: genereAuto,
       piattaforma: "",
       stato: "In corso",
       stagioni: "",
       episodi: "",
       poster_path: item.poster_path,
+<<<<<<< HEAD:app/(tabs)/home/aggiungi.tsx
+=======
+      rating: item.vote_average?.toFixed(1) || "",
+      anno: item.first_air_date?.substring(0, 4) || "",
+>>>>>>> 4a29e78b7e58e59f1070bca61e7f23883d3d5446:app/aggiungi.tsx
     });
   
     // Fetching detailed information for the selected show
@@ -93,8 +171,39 @@ export default function AggiungiModificaScreen() {
   };
   const salvaSerieNelJson = async () => {
     try {
+<<<<<<< HEAD:app/(tabs)/home/aggiungi.tsx
       const nuovaSerie = { ...form, id: selectedShow.id }; // Aggiungi l'ID
+=======
+      const nuovaSerie = { ...form };
+      // 🔄 aggiorna le categorie se mancano
+      const categorieRaw = await AsyncStorage.getItem("categorie_dati");
+      let categorie = categorieRaw
+        ? JSON.parse(categorieRaw)
+        : { generi: [], piattaforme: [] };
+>>>>>>> 4a29e78b7e58e59f1070bca61e7f23883d3d5446:app/aggiungi.tsx
 
+      if (
+        nuovaSerie.genere &&
+        !categorie.generi.some((g: any) => g.nome === nuovaSerie.genere)
+      ) {
+        categorie.generi.push({
+          id: Date.now().toString() + "_gen",
+          nome: nuovaSerie.genere,
+        });
+      }
+
+      if (
+        nuovaSerie.piattaforma &&
+        !categorie.piattaforme.some(
+          (p: any) => p.nome === nuovaSerie.piattaforma
+        )
+      ) {
+        categorie.piattaforme.push({
+          id: Date.now().toString() + "_plat",
+          nome: nuovaSerie.piattaforma,
+        });
+      }
+      await AsyncStorage.setItem("categorie_dati", JSON.stringify(categorie));
       const esistenti = await AsyncStorage.getItem("serie.json");
       const parsed = esistenti ? JSON.parse(esistenti) : [];
 
@@ -181,7 +290,7 @@ export default function AggiungiModificaScreen() {
                 onChangeText={(v) => aggiornaCampo("trama", v)}
               />
               <Text style={styles.label}>Genere</Text>
-              {generiDisponibili.map((g) => (
+              {categorieGeneri.map((g) => (
                 <TouchableOpacity
                   key={g}
                   onPress={() => aggiornaCampo("genere", g)}
@@ -192,7 +301,7 @@ export default function AggiungiModificaScreen() {
               ))}
 
               <Text style={styles.label}>Piattaforma</Text>
-              {piattaforme.map((p) => (
+              {categoriePiattaforme.map((p) => (
                 <TouchableOpacity
                   key={p}
                   onPress={() => aggiornaCampo("piattaforma", p)}
@@ -249,6 +358,8 @@ export default function AggiungiModificaScreen() {
     </KeyboardAvoidingView>
   );
 }
+
+
 
 const styles = StyleSheet.create({
   container: {
@@ -328,3 +439,5 @@ const styles = StyleSheet.create({
     backgroundColor: "#0f0f2a",
   },
 });
+
+

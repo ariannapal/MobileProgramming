@@ -1,3 +1,4 @@
+import serieJson from "@/assets/data/serie.json";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect } from "@react-navigation/native";
@@ -8,10 +9,10 @@ import {
   Image,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
+
 type Serie = {
   id?: string;
   titolo: string;
@@ -19,9 +20,9 @@ type Serie = {
   piattaforma?: string;
   poster_path?: string;
   image?: string;
+  stato?: string; // Aggiungi "stato" per sapere se la serie è "completata" o "in corso"
 };
 
-// Suggeriti per te (fissi per ora)
 const initialSuggestedSeries = [
   {
     id: "100",
@@ -41,26 +42,47 @@ const initialSuggestedSeries = [
 
 export default function HomeScreen() {
   const [serieViste, setSerieViste] = useState<Serie[]>([]);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [suggestedSeries, setSuggestedSeries] = useState(
-    initialSuggestedSeries
-  );
+  const [suggestedSeries, setSuggestedSeries] = useState(initialSuggestedSeries);
   const router = useRouter();
 
   // 🔁 Carica le serie viste ogni volta che la schermata è attiva
   useFocusEffect(
     useCallback(() => {
       const loadSerie = async () => {
-        const data = await AsyncStorage.getItem("serie.json");
-        setSerieViste(data ? JSON.parse(data) : []);
+        const data = serieJson;  // Ottieni il JSON
+        // Filtra le serie con stato "In Corso"
+        const serieInCorso = data.filter((serie: any) => serie.stato === "in corso");
+        setSerieViste(serieInCorso);
       };
       loadSerie();
     }, [])
   );
 
-  const filteredViste = serieViste.filter((serie) => {
-    const query = searchQuery.toLowerCase();
+  const renderItem = ({ item }: any) => {
+    if (item.id === "addButton") {
+      return (
+        <TouchableOpacity
+          style={styles.addButtonCard}
+          onPress={() => router.push("/aggiungi")}
+        >
+          <Ionicons name="add-circle" size={50} color="#fff" />
+          <Text style={styles.addButtonText}>Aggiungi una serie</Text>
+        </TouchableOpacity>
+      );
+    }
+
     return (
+      <TouchableOpacity
+        style={styles.card}
+        onPress={() => router.push(`/serie/${item.id}`)}
+      >
+        <Image source={{ uri: item.image }} style={styles.image} />
+        <Text style={styles.title} numberOfLines={2}>
+          {item.titolo}
+        </Text>
+      </TouchableOpacity>
+    );
+  };
       (serie.titolo?.toLowerCase().includes(query) ?? false) ||
       (serie.genere?.toLowerCase().includes(query) ?? false) ||
       (serie.piattaforma?.toLowerCase().includes(query) ?? false)
@@ -109,27 +131,27 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
-      {/* 🔍 Barra di ricerca + ➕ */}
+      {/* 🔍 Barra di ricerca cliccabile */}
       <View style={styles.searchRow}>
-        <TextInput
+        <TouchableOpacity
           style={styles.searchInput}
-          placeholder="Cerca tra le serie viste"
-          placeholderTextColor="#aaa"
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-        />
+          onPress={() => router.push("/cerca")}
+        >
+          <Text style={{ color: "#aaa" }}>Cerca tra le serie </Text>
+        </TouchableOpacity>
+
         <TouchableOpacity
           style={styles.addButton}
-          onPress={() => router.push("/(tabs)/home/aggiungi")}
+          onPress={() => router.push("/aggiungi")}
         >
           <Ionicons name="add" size={26} color="white" />
         </TouchableOpacity>
       </View>
 
-      {/* ✅ Serie viste */}
-      <Text style={styles.sectionTitle}>Le tue Serie TV viste</Text>
+      {/* Sezione "Le tue Serie TV In Corso" */}
+      <Text style={styles.sectionTitle}>Le tue Serie TV In Corso</Text>
       <FlatList
-        data={filteredViste}
+        data={serieViste}
         keyExtractor={(item, index) => item.id || item.titolo + index}
         horizontal
         renderItem={renderItem}
@@ -137,7 +159,7 @@ export default function HomeScreen() {
         showsHorizontalScrollIndicator={false}
       />
 
-      {/* ✅ Suggeriti per te */}
+      {/* Suggeriti per te */}
       <Text style={styles.sectionTitle}>Suggeriti per te</Text>
       <FlatList
         data={suggestedSeries}
@@ -166,10 +188,10 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     height: 40,
+    justifyContent: "center",
     backgroundColor: "#1f1f3a",
     borderRadius: 8,
     paddingHorizontal: 12,
-    color: "#fff",
   },
   addButton: {
     marginLeft: 10,
@@ -182,7 +204,6 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginTop: 20,
     marginBottom: 10,
-    textAlign: "left",
     color: "#fff",
   },
   horizontalList: {
@@ -221,3 +242,4 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
 });
+

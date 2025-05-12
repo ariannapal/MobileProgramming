@@ -41,9 +41,14 @@ export default function PreferitiScreen() {
       onPress={() => router.push(`/serie/${item.id}`)}
     >
       <Image
-        source={{ uri: item.image || item.poster_path }}
+        source={{
+          uri: item.poster_path
+            ? `https://image.tmdb.org/t/p/w185/${item.poster_path}`
+            : item.image || "https://via.placeholder.com/120x180?text=?",
+        }}
         style={styles.image}
       />
+
       <Text style={styles.title} numberOfLines={2}>
         {item.titolo || item.title}
       </Text>

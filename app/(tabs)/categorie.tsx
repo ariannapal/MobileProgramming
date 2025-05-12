@@ -1,11 +1,15 @@
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useFocusEffect } from "@react-navigation/native";
 import { useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useState } from "react";
+
 import {
   Button,
   Modal,
   Pressable,
+  SafeAreaView,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -14,41 +18,72 @@ import {
 import categorieJson from "../../assets/data/categorie.json";
 
 const STORAGE_KEY = "categorie_dati";
+const SERIE_KEY = "serie.json";
 
 const CategorieScreen = () => {
   const router = useRouter();
-  type Categoria = { id: string; nome: string; count: number };
+  type Categoria = { id: string; nome: string };
 
   const [categorie, setCategorie] = useState<{
     piattaforme: Categoria[];
     generi: Categoria[];
   }>({ piattaforme: [], generi: [] });
 
+  const [conteggi, setConteggi] = useState<{
+    piattaforme: Record<string, number>;
+    generi: Record<string, number>;
+  }>({ piattaforme: {}, generi: {} });
+
   const [modalVisible, setModalVisible] = useState(false);
   const [nomeCategoria, setNomeCategoria] = useState("");
   const [tipoCategoria, setTipoCategoria] = useState<"piattaforma" | "genere">(
     "piattaforma"
   );
-  useEffect(() => {
-    const caricaCategorie = async () => {
-      try {
-        const salvate = await AsyncStorage.getItem(STORAGE_KEY);
-        if (salvate) {
-          setCategorie(JSON.parse(salvate));
-        } else {
-          setCategorie(categorieJson);
-          await AsyncStorage.setItem(
-            STORAGE_KEY,
-            JSON.stringify(categorieJson)
-          );
-        }
-      } catch (err) {
-        console.error("Errore nel caricamento categorie:", err);
-      }
-    };
+  useFocusEffect(
+    useCallback(() => {
+      const caricaCategorie = async () => {
+        try {
+          const salvate = await AsyncStorage.getItem(STORAGE_KEY);
+          if (salvate) {
+            setCategorie(JSON.parse(salvate));
+          } else {
+            setCategorie(categorieJson);
+            await AsyncStorage.setItem(
+              STORAGE_KEY,
+              JSON.stringify(categorieJson)
+            );
+          }
 
-    caricaCategorie();
-  }, []);
+          // ✅ Carica le serie
+          const serieSalvate = await AsyncStorage.getItem(SERIE_KEY);
+          const parsedSerie = serieSalvate ? JSON.parse(serieSalvate) : [];
+
+          const conteggiGeneri: Record<string, number> = {};
+          const conteggiPiattaforme: Record<string, number> = {};
+
+          for (const serie of parsedSerie) {
+            if (serie.genere) {
+              conteggiGeneri[serie.genere] =
+                (conteggiGeneri[serie.genere] || 0) + 1;
+            }
+            if (serie.piattaforma) {
+              conteggiPiattaforme[serie.piattaforma] =
+                (conteggiPiattaforme[serie.piattaforma] || 0) + 1;
+            }
+          }
+
+          setConteggi({
+            generi: conteggiGeneri,
+            piattaforme: conteggiPiattaforme,
+          });
+        } catch (err) {
+          console.error("Errore nel caricamento categorie:", err);
+        }
+      };
+
+      caricaCategorie();
+    }, [])
+  );
 
   const aggiungiCategoria = async () => {
     if (!nomeCategoria.trim()) return;
@@ -78,88 +113,97 @@ const CategorieScreen = () => {
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.sectionHeader}>
-        <Text style={styles.header}>Piattaforme</Text>
-        <Pressable
-          onPress={() => {
-            setTipoCategoria("piattaforma"); // o "genere"
-            setModalVisible(true);
-          }}
-        >
-          <Ionicons name="add-circle" size={30} color="#a866ff" />
-        </Pressable>
-      </View>
+    <SafeAreaView style={styles.container}>
+      <ScrollView contentContainerStyle={styles.scrollContainer}>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.header}>Piattaforme</Text>
+          <Pressable
+            onPress={() => {
+              setTipoCategoria("piattaforma");
+              setModalVisible(true);
+            }}
+          >
+            <Ionicons name="add-circle" size={30} color="#a866ff" />
+          </Pressable>
+        </View>
 
-      {categorie.piattaforme.map((item) => (
-        <Pressable
-          key={item.id}
-          style={styles.riga}
-          onPress={() =>
-            router.push(`/categorie/${encodeURIComponent(item.nome)}`)
-          }
-        >
-          <Text style={styles.nome}>{item.nome}</Text>
-          <Text style={styles.contatore}>({item.count} serie)</Text>
-        </Pressable>
-      ))}
-
-      <View style={styles.sectionHeader}>
-        <Text style={styles.header}>Generi</Text>
-        <Pressable
-          onPress={() => {
-            setTipoCategoria("genere"); // o "genere"
-            setModalVisible(true);
-          }}
-        >
-          <Ionicons name="add-circle" size={30} color="#a866ff" />
-        </Pressable>
-      </View>
-
-      {categorie.generi.map((item) => (
-        <Pressable
-          key={item.id}
-          style={styles.riga}
-          onPress={() =>
-            router.push(`/categorie/${encodeURIComponent(item.nome)}`)
-          }
-        >
-          <Text style={styles.nome}>{item.nome}</Text>
-          <Text style={styles.contatore}>({item.count} serie)</Text>
-        </Pressable>
-      ))}
-
-      {/* MODALE */}
-      <Modal
-        visible={modalVisible}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setModalVisible(false)}
-      >
-        <View style={styles.modalBackground}>
-          <View style={styles.modalContainer}>
-            <Text style={styles.modalTitle}>
-              Nuova{" "}
-              {tipoCategoria === "piattaforma"
-                ? "Piattaforma"
-                : "Categoria di Genere"}
+        {categorie.piattaforme.map((item) => (
+          <Pressable
+            key={item.id}
+            style={styles.riga}
+            onPress={() =>
+              router.push(`/categorie/${encodeURIComponent(item.nome)}`)
+            }
+          >
+            <Text style={styles.nome}>{item.nome}</Text>
+            <Text style={styles.contatore}>
+              ({conteggi.piattaforme[item.nome] || 0} serie)
             </Text>
+          </Pressable>
+        ))}
 
-            <TextInput
-              placeholder="Nome categoria"
-              value={nomeCategoria}
-              onChangeText={setNomeCategoria}
-              style={styles.input}
-            />
+        <View style={styles.sectionHeader}>
+          <Text style={styles.header}>Generi</Text>
+          <Pressable
+            onPress={() => {
+              setTipoCategoria("genere");
+              setModalVisible(true);
+            }}
+          >
+            <Ionicons name="add-circle" size={30} color="#a866ff" />
+          </Pressable>
+        </View>
 
-            <View style={styles.buttons}>
-              <Button title="Annulla" onPress={() => setModalVisible(false)} />
-              <Button title="Salva" onPress={aggiungiCategoria} />
+        {categorie.generi.map((item) => (
+          <Pressable
+            key={item.id}
+            style={styles.riga}
+            onPress={() =>
+              router.push(`/categorie/${encodeURIComponent(item.nome)}`)
+            }
+          >
+            <Text style={styles.nome}>{item.nome}</Text>
+            <Text style={styles.contatore}>
+              ({conteggi.generi[item.nome] || 0} serie)
+            </Text>
+          </Pressable>
+        ))}
+
+        {/* MODALE */}
+        <Modal
+          visible={modalVisible}
+          transparent
+          animationType="slide"
+          onRequestClose={() => setModalVisible(false)}
+        >
+          <View style={styles.modalBackground}>
+            <View style={styles.modalContainer}>
+              <Text style={styles.modalTitle}>
+                Nuova{" "}
+                {tipoCategoria === "piattaforma"
+                  ? "Piattaforma"
+                  : "Categoria di Genere"}
+              </Text>
+
+              <TextInput
+                placeholder="Nome categoria"
+                value={nomeCategoria}
+                onChangeText={setNomeCategoria}
+                style={styles.input}
+              />
+
+              <View style={styles.buttons}>
+                <Button
+                  title="Annulla"
+                  onPress={() => setModalVisible(false)}
+                />
+                <Button title="Salva" onPress={aggiungiCategoria} />
+              </View>
             </View>
           </View>
-        </View>
-      </Modal>
-    </View>
+        </Modal>
+      </ScrollView>
+    </SafeAreaView>
   );
 };
 
@@ -170,6 +214,10 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#0f0f2a", // dark blu/viola
     padding: 16,
+  },
+  scrollContainer: {
+    padding: 16,
+    paddingBottom: 80,
   },
   header: {
     fontWeight: "bold",

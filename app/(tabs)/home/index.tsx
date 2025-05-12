@@ -1,4 +1,4 @@
-import serieJson from "@/assets/data/serie.json"; // ✅ Serie viste da JSON
+import serieJson from "@/assets/data/serie.json";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
@@ -7,12 +7,11 @@ import {
   Image,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
 
-// Suggeriti per te (fissi per ora)
+// Suggeriti per te
 const initialSuggestedSeries = [
   {
     id: "100",
@@ -32,27 +31,15 @@ const initialSuggestedSeries = [
 
 export default function HomeScreen() {
   const router = useRouter();
-  const [searchQuery, setSearchQuery] = useState("");
-  const [suggestedSeries, setSuggestedSeries] = useState(
-    initialSuggestedSeries
-  );
-  const [serieViste] = useState(serieJson); // ✅ Serie viste dal JSON
-
-  const filteredViste = serieViste.filter((serie) => {
-    const query = searchQuery.toLowerCase();
-    return (
-      serie.titolo.toLowerCase().includes(query) ||
-      serie.categoria.toLowerCase().includes(query) ||
-      serie.piattaforma.toLowerCase().includes(query)
-    );
-  });
+  const [suggestedSeries, setSuggestedSeries] = useState(initialSuggestedSeries);
+  const [serieViste] = useState(serieJson);
 
   const renderItem = ({ item }: any) => {
     if (item.id === "addButton") {
       return (
         <TouchableOpacity
           style={styles.addButtonCard}
-          onPress={() => router.push("/(tabs)/home/aggiungi")}
+          onPress={() => router.push("/aggiungi")}
         >
           <Ionicons name="add-circle" size={50} color="#fff" />
           <Text style={styles.addButtonText}>Aggiungi una serie</Text>
@@ -75,27 +62,27 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
-      {/* 🔍 Barra di ricerca + ➕ */}
+      {/* 🔍 Barra di ricerca cliccabile */}
       <View style={styles.searchRow}>
-        <TextInput
+        <TouchableOpacity
           style={styles.searchInput}
-          placeholder="Cerca tra le serie viste"
-          placeholderTextColor="#aaa"
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-        />
+          onPress={() => router.push("/cerca")}
+        >
+          <Text style={{ color: "#aaa" }}>Cerca tra le serie viste</Text>
+        </TouchableOpacity>
+
         <TouchableOpacity
           style={styles.addButton}
-          onPress={() => router.push("/(tabs)/home/aggiungi")}
+          onPress={() => router.push("/aggiungi")}
         >
           <Ionicons name="add" size={26} color="white" />
         </TouchableOpacity>
       </View>
 
-      {/* ✅ Serie viste */}
+      {/* Serie viste */}
       <Text style={styles.sectionTitle}>Le tue Serie TV viste</Text>
       <FlatList
-        data={filteredViste}
+        data={serieViste}
         keyExtractor={(item) => item.id}
         horizontal
         renderItem={renderItem}
@@ -103,7 +90,7 @@ export default function HomeScreen() {
         showsHorizontalScrollIndicator={false}
       />
 
-      {/* ✅ Suggeriti per te */}
+      {/* Suggeriti per te */}
       <Text style={styles.sectionTitle}>Suggeriti per te</Text>
       <FlatList
         data={[...suggestedSeries, { id: "addButton" }]}
@@ -132,10 +119,10 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     height: 40,
+    justifyContent: "center",
     backgroundColor: "#1f1f3a",
     borderRadius: 8,
     paddingHorizontal: 12,
-    color: "#fff",
   },
   addButton: {
     marginLeft: 10,
@@ -148,7 +135,6 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginTop: 20,
     marginBottom: 10,
-    textAlign: "left",
     color: "#fff",
   },
   horizontalList: {

@@ -1,3 +1,5 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
@@ -29,7 +31,9 @@ export default function AggiungiModificaScreen() {
     stato: "In corso",
     stagioni: "",
     episodi: "",
+    poster_path: "", // AGGIUNTO!
   });
+  const router = useRouter();
 
   const fetchTVShows = async () => {
     setLoading(true);
@@ -61,20 +65,45 @@ export default function AggiungiModificaScreen() {
       stato: "In corso",
       stagioni: "",
       episodi: "",
+      poster_path: item.poster_path, // 👈 AGGIUNTO!
     });
   };
 
   const aggiornaCampo = (campo: string, valore: string) => {
     setForm((prev) => ({ ...prev, [campo]: valore }));
   };
+  const salvaSerieNelJson = async () => {
+    try {
+      const nuovaSerie = { ...form };
+
+      const esistenti = await AsyncStorage.getItem("serie.json");
+      const parsed = esistenti ? JSON.parse(esistenti) : [];
+
+      parsed.push(nuovaSerie);
+
+      await AsyncStorage.setItem("serie.json", JSON.stringify(parsed));
+
+      setSelectedShow(null);
+      console.log("Salvo:", nuovaSerie);
+
+      // Redirect alla home
+      router.replace("/home");
+    } catch (err) {
+      console.error("Errore nel salvataggio:", err);
+      alert("Errore durante il salvataggio");
+    }
+  };
 
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : undefined}
-      style={{ flex: 1 }}
+      style={{ flex: 1, backgroundColor: "#0f0f2a" }} // 👈 aggiunto qui
       keyboardVerticalOffset={80} // eventualmente regola in base alla tua tab bar
     >
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContainer}
+        style={{ flex: 1 }} // 👈 questo aiuta
+      >
         <View style={styles.container}>
           {!selectedShow && (
             <>
@@ -188,7 +217,10 @@ export default function AggiungiModificaScreen() {
                 onChangeText={(v) => aggiornaCampo("episodi", v)}
               />
 
-              <TouchableOpacity style={[styles.button, { marginTop: 16 }]}>
+              <TouchableOpacity
+                style={[styles.button, { marginTop: 16 }]}
+                onPress={salvaSerieNelJson}
+              >
                 <Text style={styles.buttonText}>Salva</Text>
               </TouchableOpacity>
             </>

@@ -5,15 +5,15 @@ import { useRouter } from "expo-router";
 import React, { useCallback, useState } from "react";
 
 import {
+  Button,
+  Modal,
+  Pressable,
   SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
-  View,
-  Pressable,
-  Modal,
   TextInput,
-  Button,
+  View,
 } from "react-native";
 import categorieJson from "../../assets/data/categorie.json";
 
@@ -126,7 +126,7 @@ const CategorieScreen = () => {
             <Ionicons name="add-circle" size={30} color="#a866ff" />
           </Pressable>
         </View>
-  
+
         {categorie.piattaforme.map((item) => (
           <Pressable
             key={item.id}
@@ -141,7 +141,7 @@ const CategorieScreen = () => {
             </Text>
           </Pressable>
         ))}
-  
+
         <View style={styles.sectionHeader}>
           <Text style={styles.header}>Generi</Text>
           <Pressable
@@ -153,7 +153,7 @@ const CategorieScreen = () => {
             <Ionicons name="add-circle" size={30} color="#a866ff" />
           </Pressable>
         </View>
-  
+
         {categorie.generi.map((item) => (
           <Pressable
             key={item.id}
@@ -168,7 +168,7 @@ const CategorieScreen = () => {
             </Text>
           </Pressable>
         ))}
-  
+
         {/* MODALE */}
         <Modal
           visible={modalVisible}
@@ -184,16 +184,19 @@ const CategorieScreen = () => {
                   ? "Piattaforma"
                   : "Categoria di Genere"}
               </Text>
-  
+
               <TextInput
                 placeholder="Nome categoria"
                 value={nomeCategoria}
                 onChangeText={setNomeCategoria}
                 style={styles.input}
               />
-  
+
               <View style={styles.buttons}>
-                <Button title="Annulla" onPress={() => setModalVisible(false)} />
+                <Button
+                  title="Annulla"
+                  onPress={() => setModalVisible(false)}
+                />
                 <Button title="Salva" onPress={aggiungiCategoria} />
               </View>
             </View>
@@ -202,7 +205,8 @@ const CategorieScreen = () => {
       </ScrollView>
     </SafeAreaView>
   );
-  
+};
+
 export default CategorieScreen;
 
 const styles = StyleSheet.create({
@@ -210,6 +214,10 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#0f0f2a", // dark blu/viola
     padding: 16,
+  },
+  scrollContainer: {
+    padding: 16,
+    paddingBottom: 80,
   },
   header: {
     fontWeight: "bold",
@@ -285,8 +293,4 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
   },
-  scrollContainer: {
-    padding: 16,
-    paddingBottom: 80,
-  },  
 });

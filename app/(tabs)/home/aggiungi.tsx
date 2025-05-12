@@ -55,7 +55,7 @@ export default function AggiungiModificaScreen() {
     setLoading(false);
   };
 
-  const handleSelectShow = (item: any) => {
+  const handleSelectShow = async (item: any) => {
     setSelectedShow(item);
     setForm({
       titolo: item.name,
@@ -65,16 +65,35 @@ export default function AggiungiModificaScreen() {
       stato: "In corso",
       stagioni: "",
       episodi: "",
-      poster_path: item.poster_path, // 👈 AGGIUNTO!
+      poster_path: item.poster_path,
     });
-  };
+  
+    // Fetching detailed information for the selected show
+    const res = await fetch(
+      `https://api.themoviedb.org/3/tv/${item.id}?language=it-IT`,
+      {
+        headers: {
+          Authorization: "Bearer YOUR_API_KEY",
+          accept: "application/json",
+        },
+      }
+    );
+    const data = await res.json();
+  
+    // Update the form with additional details if needed
+    setForm((prevForm) => ({
+      ...prevForm,
+      rating: data.vote_average, // Rating
+      anno: data.first_air_date ? new Date(data.first_air_date).getFullYear() : "", // Year
+    }));
+  };  
 
   const aggiornaCampo = (campo: string, valore: string) => {
     setForm((prev) => ({ ...prev, [campo]: valore }));
   };
   const salvaSerieNelJson = async () => {
     try {
-      const nuovaSerie = { ...form };
+      const nuovaSerie = { ...form, id: selectedShow.id }; // Aggiungi l'ID
 
       const esistenti = await AsyncStorage.getItem("serie.json");
       const parsed = esistenti ? JSON.parse(esistenti) : [];

@@ -70,9 +70,23 @@ export default function HomeScreen() {
   const renderItem = ({ item }: { item: Serie }) => (
     <TouchableOpacity
       style={styles.card}
-      onPress={() =>
-        router.push(`/serie/${encodeURIComponent(item.id || item.titolo)}`)
-      }
+      onPress={async () => {
+        // Prendi la lista attuale da AsyncStorage
+        const data = await AsyncStorage.getItem("serie.json");
+        const lista = data ? JSON.parse(data) : [];
+  
+        // Controlla se è già presente
+        const esiste = lista.some((s: Serie) => s.id === item.id);
+  
+        // Se non esiste, salvalo
+        if (!esiste && item.id && item.titolo) {
+          const nuovaLista = [...lista, item];
+          await AsyncStorage.setItem("serie.json", JSON.stringify(nuovaLista));
+        }
+  
+        // Vai al dettaglio
+        router.push(`/serie/${encodeURIComponent(item.id || item.titolo)}`);
+      }}
     >
       {item.poster_path || item.image ? (
         <Image
@@ -91,6 +105,7 @@ export default function HomeScreen() {
       </Text>
     </TouchableOpacity>
   );
+  
 
   return (
     <View style={styles.container}>
@@ -179,12 +194,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   image: {
-    width: 120,
-    height: 180,
+    width: 120,       // prima era 120
+    height: 180,      // prima era 180
     borderRadius: 8,
     marginBottom: 6,
     backgroundColor: "#ccc",
-  },
+  },  
   title: {
     fontSize: 13,
     textAlign: "center",

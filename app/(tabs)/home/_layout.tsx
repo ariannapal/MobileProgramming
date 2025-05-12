@@ -11,14 +11,6 @@ export default function HomeStackLayout() {
       />
     
 
- <Stack.Screen
-        name="aggiungi" 
-        options={{
-          headerShown: true, // Nascondiamo l'header per la schermata aggiungi
-          
-        }}
-      />
-      
     </Stack>
 
     

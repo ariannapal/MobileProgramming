@@ -12,6 +12,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+
 type Serie = {
   id?: string;
   titolo: string;
@@ -19,9 +20,9 @@ type Serie = {
   piattaforma?: string;
   poster_path?: string;
   image?: string;
+  stato?: string; // Aggiungi "stato" per sapere se la serie è "completata" o "in corso"
 };
 
-// Suggeriti per te
 const initialSuggestedSeries = [
   {
     id: "100",
@@ -41,31 +42,21 @@ const initialSuggestedSeries = [
 
 export default function HomeScreen() {
   const [serieViste, setSerieViste] = useState<Serie[]>([]);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [suggestedSeries, setSuggestedSeries] = useState(
-    initialSuggestedSeries
-  );
+  const [suggestedSeries, setSuggestedSeries] = useState(initialSuggestedSeries);
   const router = useRouter();
 
   // 🔁 Carica le serie viste ogni volta che la schermata è attiva
   useFocusEffect(
     useCallback(() => {
       const loadSerie = async () => {
-        const data = await AsyncStorage.getItem("serie.json");
-        setSerieViste(data ? JSON.parse(data) : []);
+        const data = serieJson;  // Ottieni il JSON
+        // Filtra le serie con stato "In Corso"
+        const serieInCorso = data.filter((serie: any) => serie.stato === "in corso");
+        setSerieViste(serieInCorso);
       };
       loadSerie();
     }, [])
   );
-
-  const filteredViste = serieViste.filter((serie) => {
-    const query = searchQuery.toLowerCase();
-    return (
-      (serie.titolo?.toLowerCase().includes(query) ?? false) ||
-      (serie.genere?.toLowerCase().includes(query) ?? false) ||
-      (serie.piattaforma?.toLowerCase().includes(query) ?? false)
-    );
-  });
 
   const renderItem = ({ item }: any) => {
     if (item.id === "addButton") {
@@ -101,7 +92,7 @@ export default function HomeScreen() {
           style={styles.searchInput}
           onPress={() => router.push("/cerca")}
         >
-          <Text style={{ color: "#aaa" }}>Cerca tra le serie viste</Text>
+          <Text style={{ color: "#aaa" }}>Cerca tra le serie </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -112,8 +103,8 @@ export default function HomeScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Serie viste */}
-      <Text style={styles.sectionTitle}>Le tue Serie TV viste</Text>
+      {/* Sezione "Le tue Serie TV In Corso" */}
+      <Text style={styles.sectionTitle}>Le tue Serie TV In Corso</Text>
       <FlatList
         data={serieViste}
         keyExtractor={(item, index) => item.id || item.titolo + index}
@@ -206,3 +197,4 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
 });
+

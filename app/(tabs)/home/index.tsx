@@ -22,28 +22,12 @@ type Serie = {
   stato?: string;
 };
 
-const initialSuggestedSeries: Serie[] = [
-  {
-    id: "100",
-    titolo: "The Crown",
-    image: "https://i.imgur.com/4.jpg",
-    genere: "Drama",
-    piattaforma: "Netflix",
-  },
-  {
-    id: "101",
-    titolo: "The Mandalorian",
-    image: "https://i.imgur.com/8.jpg",
-    genere: "Sci-Fi",
-    piattaforma: "Disney+",
-  },
-];
-
 export default function HomeScreen() {
   const [serieViste, setSerieViste] = useState<Serie[]>([]);
-  const [suggestedSeries, setSuggestedSeries] = useState<Serie[]>(
-    initialSuggestedSeries
-  );
+  const [suggestedSeries, setSuggestedSeries] = useState<Serie[]>([
+    { id: "loadMore", titolo: "Scopri nuova serie" },
+  ]);
+
   const router = useRouter();
 
   useFocusEffect(
@@ -64,15 +48,68 @@ export default function HomeScreen() {
     }, [])
   );
 
+  const fetchNuovaSerie = async () => {
+    try {
+      const [res, genresRes] = await Promise.all([
+        fetch(`https://api.themoviedb.org/3/tv/popular?language=it-IT&page=1`, {
+          headers: {
+            Authorization:
+              "Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiIxYWMxMzU4NjY3ZjcyODgzNWRhZjk2YjAxZDZkODVhMCIsIm5iZiI6MTc0Njc3ODg1MC4zMTcsInN1YiI6IjY4MWRiYWUyM2E2OGExMTcyOTYzYmQxNiIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.I6RbtWrCPo0n0YWNYNfGs0wnAcIrG0n5t4KYh0W7Am4",
+            accept: "application/json",
+          },
+        }),
+        fetch(`https://api.themoviedb.org/3/genre/tv/list?language=it-IT`, {
+          headers: {
+            Authorization:
+              "Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiIxYWMxMzU4NjY3ZjcyODgzNWRhZjk2YjAxZDZkODVhMCIsIm5iZiI6MTc0Njc3ODg1MC4zMTcsInN1YiI6IjY4MWRiYWUyM2E2OGExMTcyOTYzYmQxNiIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.I6RbtWrCPo0n0YWNYNfGs0wnAcIrG0n5t4KYh0W7Am4",
+            accept: "application/json",
+          },
+        }),
+      ]);
+
+      if (!res.ok || !genresRes.ok) {
+        throw new Error("Errore nella fetch TMDb");
+      }
+
+      const data = await res.json();
+      const genresData = await genresRes.json();
+
+      const genresMap: Record<number, string> = {};
+      genresData.genres.forEach((g: { id: number; name: string }) => {
+        genresMap[g.id] = g.name;
+      });
+
+      const randomIndex = Math.floor(Math.random() * data.results.length);
+      const show = data.results[randomIndex];
+
+      const nuovaSerie: Serie = {
+        id: show.id?.toString(),
+        titolo: show.name,
+        poster_path: show.poster_path,
+        genere:
+          show.genre_ids?.length > 0 ? genresMap[show.genre_ids[0]] : undefined,
+        piattaforma: "TMDb",
+      };
+
+      setSuggestedSeries((prev) => [
+        ...prev.slice(0, -1),
+        nuovaSerie,
+        { id: "loadMore", titolo: "Scopri nuova serie" },
+      ]);
+    } catch (err) {
+      console.error("❌ Errore TMDb:", err);
+    }
+  };
+
   const renderItem = ({ item }: { item: Serie }) => {
-    if (item.id === "addButton") {
+    if (item.id === "loadMore") {
       return (
         <TouchableOpacity
           style={styles.addButtonCard}
-          onPress={() => router.push("/aggiungi")}
+          onPress={fetchNuovaSerie}
         >
-          <Ionicons name="add-circle" size={50} color="#fff" />
-          <Text style={styles.addButtonText}>Aggiungi una serie</Text>
+          <Ionicons name="refresh-circle" size={50} color="#fff" />
+          <Text style={styles.addButtonText}>Scopri nuova serie</Text>
         </TouchableOpacity>
       );
     }
@@ -87,10 +124,7 @@ export default function HomeScreen() {
 
           if (!esiste && item.id && item.titolo) {
             const nuovaLista = [...lista, item];
-            await AsyncStorage.setItem(
-              "serie.json",
-              JSON.stringify(nuovaLista)
-            );
+            await AsyncStorage.setItem("serie.json", JSON.stringify(nuovaLista));
           }
 
           router.push(`/serie/${encodeURIComponent(item.id || item.titolo)}`);
@@ -146,7 +180,7 @@ export default function HomeScreen() {
       <Text style={styles.sectionTitle}>Suggeriti per te</Text>
       <FlatList
         data={suggestedSeries}
-        keyExtractor={(item) => item.id!}
+        keyExtractor={(item, index) => item.id || index.toString()}
         horizontal
         renderItem={renderItem}
         contentContainerStyle={styles.horizontalList}

@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
@@ -12,44 +13,74 @@ import {
 } from "react-native";
 import { isFavorite, saveFavorite } from "../utils/favoritesStorage";
 
-const tutteLeSerie = [
-  {
-    id: "1",
-    titolo: "Stranger Things",
-    descrizione: "Un gruppo di ragazzi affronta il Sottosopra...",
-    poster: "https://i.imgur.com/1.jpg",
-    rating: 4,
-    anno: 2025,
-    categoria: "Netflix",
-  },
-  // Altre serie...
-];
-
 export default function SerieDettaglioScreen() {
   const [isFav, setIsFav] = useState(false);
   const { id } = useLocalSearchParams();
+  const idString = Array.isArray(id) ? id[0] : id;
   const router = useRouter();
-  const serie = tutteLeSerie.find((s) => s.id === id);
+  const [serie, setSerie] = useState<any | null>(null);
+
+  /*useEffect(() => {
+    const fetchSerie = async () => {
+      const data = await AsyncStorage.getItem("serie.json");
+      const lista = data ? JSON.parse(data) : [];
+      const trovata = lista.find((s: any) => s.id === idString); // Assicurati che 'id' sia corretto
+      setSerie(trovata); // Imposta la serie trovata
+    };
+  
+    fetchSerie();
+  }, [id]);*/
+
+  useEffect(() => {
+    const fetchSerie = async () => {
+      const data = await AsyncStorage.getItem("serie.json");
+      const lista = data ? JSON.parse(data) : [];
+  
+      console.log("DEBUG: lista JSON", lista);
+      console.log("DEBUG: id cercato:", idString);
+  
+      //const trovata = lista.find((s: any) => String(s.id) === String(idString));
+      const trovata = lista.find(
+        (s: any) =>
+          String(s.id) === String(idString) || s.titolo === idString
+      );
+      
+      console.log("DEBUG: serie trovata:", trovata);
+  
+      setSerie(trovata);
+    };
+  
+    fetchSerie();
+  }, [id]);
+  
+  
 
   useEffect(() => {
     if (serie) {
-      isFavorite(serie.id).then(setIsFav);
+      isFavorite(serie.id).then((favoriteStatus) => {
+        setIsFav(!!favoriteStatus);  // Assicurati che il valore sia booleano
+      });
     }
-  }, []);
+  }, [serie]);
+  
 
   const toggleFavorite = async () => {
-    await saveFavorite(serie);
-    const updated = await isFavorite(serie.id);
-    setIsFav(updated);
+    if (serie) {
+      await saveFavorite(serie);
+      const updated = await isFavorite(serie.id);
+      setIsFav(updated);
+    }
   };
 
+  // se non trova la serie: spoiler non la trova maiiiii
   if (!serie) {
     return (
       <View style={styles.center}>
-        <Text style={{ color: "#fff" }}>Serie non trovata.</Text>
+        <Text style={{ color: "#fff" }}>Caricamento...</Text>
       </View>
     );
   }
+
 
   return (
     <ScrollView style={styles.container}>
@@ -58,7 +89,14 @@ export default function SerieDettaglioScreen() {
         <Text style={styles.backText}>Indietro</Text>
       </Pressable>
 
-      <Image source={{ uri: serie.poster }} style={styles.poster} />
+      <Image 
+  source={{ 
+    uri: serie.poster_path 
+      ? `https://image.tmdb.org/t/p/w342${serie.poster_path}` 
+      : 'https://via.placeholder.com/342x480?text=No+Image' 
+  }} 
+  style={styles.poster} 
+/>
       <View style={styles.titleRow}>
         <Text style={styles.title}>{serie.titolo}</Text>
         <TouchableOpacity onPress={toggleFavorite}>
@@ -73,7 +111,7 @@ export default function SerieDettaglioScreen() {
       <Text style={styles.meta}>
         ⭐ {serie.rating} · {serie.anno}
       </Text>
-      <Text style={styles.desc}>{serie.descrizione}</Text>
+      <Text style={styles.desc}>{serie.trama ?? "Trama non disponibile."}</Text>
     </ScrollView>
   );
 }
@@ -82,7 +120,6 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#0f0f2a", padding: 16 },
   back: { flexDirection: "row", alignItems: "center", marginBottom: 12 },
   backText: { color: "#fff", marginLeft: 4 },
-  poster: { width: "100%", height: 320, borderRadius: 12, marginBottom: 16 },
   meta: { color: "#ccc", fontSize: 15, marginBottom: 10 },
   desc: { color: "#ddd", fontSize: 16, lineHeight: 22 },
   center: {
@@ -110,4 +147,11 @@ const styles = StyleSheet.create({
   favoriteIcon: {
     paddingHorizontal: 4,
   },
+  poster: { 
+    width: "100%", // Mantieni la larghezza al 100%
+    height: 320,   // Imposta un'altezza fissa
+    borderRadius: 12, 
+    marginBottom: 16,
+    resizeMode: "cover",  // Impedisce che l'immagine venga deformata
+  },  
 });

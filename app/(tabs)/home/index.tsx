@@ -19,10 +19,10 @@ type Serie = {
   piattaforma?: string;
   poster_path?: string;
   image?: string;
-  stato?: string; // Aggiungi "stato" per sapere se la serie è "completata" o "in corso"
+  stato?: string;
 };
 
-const initialSuggestedSeries = [
+const initialSuggestedSeries: Serie[] = [
   {
     id: "100",
     titolo: "The Crown",
@@ -41,35 +41,30 @@ const initialSuggestedSeries = [
 
 export default function HomeScreen() {
   const [serieViste, setSerieViste] = useState<Serie[]>([]);
-  const [suggestedSeries, setSuggestedSeries] = useState(
+  const [suggestedSeries, setSuggestedSeries] = useState<Serie[]>(
     initialSuggestedSeries
   );
   const router = useRouter();
 
-  // 🔁 Carica le serie viste ogni volta che la schermata è attiva
   useFocusEffect(
     useCallback(() => {
       const loadSerie = async () => {
         try {
           const json = await AsyncStorage.getItem("serie.json");
           const data: Serie[] = json ? JSON.parse(json) : [];
-
-          // Filtra solo quelle "in corso"
           const serieInCorso = data.filter(
             (serie) => serie.stato?.toLowerCase().trim() === "in corso"
           );
-
           setSerieViste(serieInCorso);
         } catch (err) {
           console.error("Errore nel caricamento delle serie:", err);
         }
       };
-
       loadSerie();
     }, [])
   );
 
-  const renderItem = ({ item }: any) => {
+  const renderItem = ({ item }: { item: Serie }) => {
     if (item.id === "addButton") {
       return (
         <TouchableOpacity
@@ -85,18 +80,34 @@ export default function HomeScreen() {
     return (
       <TouchableOpacity
         style={styles.card}
-        onPress={() => router.push(`/serie/${item.id}`)}
+        onPress={async () => {
+          const data = await AsyncStorage.getItem("serie.json");
+          const lista = data ? JSON.parse(data) : [];
+          const esiste = lista.some((s: Serie) => s.id === item.id);
+
+          if (!esiste && item.id && item.titolo) {
+            const nuovaLista = [...lista, item];
+            await AsyncStorage.setItem(
+              "serie.json",
+              JSON.stringify(nuovaLista)
+            );
+          }
+
+          router.push(`/serie/${encodeURIComponent(item.id || item.titolo)}`);
+        }}
       >
-        <Image
-          source={{
-            uri:
-              item.poster_path && item.poster_path.startsWith("/")
+        {item.poster_path || item.image ? (
+          <Image
+            source={{
+              uri: item.poster_path?.startsWith("/")
                 ? `https://image.tmdb.org/t/p/w185${item.poster_path}`
                 : item.image || "https://via.placeholder.com/120x180?text=?",
-          }}
-          style={styles.image}
-        />
-
+            }}
+            style={styles.image}
+          />
+        ) : (
+          <View style={styles.image} />
+        )}
         <Text style={styles.title} numberOfLines={2}>
           {item.titolo}
         </Text>
@@ -106,7 +117,6 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
-      {/* 🔍 Barra di ricerca cliccabile */}
       <View style={styles.searchRow}>
         <TouchableOpacity
           style={styles.searchInput}
@@ -123,7 +133,6 @@ export default function HomeScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Sezione "Le tue Serie TV In Corso" */}
       <Text style={styles.sectionTitle}>Le tue Serie TV In Corso</Text>
       <FlatList
         data={serieViste}
@@ -134,11 +143,10 @@ export default function HomeScreen() {
         showsHorizontalScrollIndicator={false}
       />
 
-      {/* Suggeriti per te */}
       <Text style={styles.sectionTitle}>Suggeriti per te</Text>
       <FlatList
         data={suggestedSeries}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item.id!}
         horizontal
         renderItem={renderItem}
         contentContainerStyle={styles.horizontalList}

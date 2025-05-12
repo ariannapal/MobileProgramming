@@ -1,34 +1,53 @@
-import React, { useState } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useRouter } from "expo-router";
+import React, { useEffect, useState } from "react";
 import {
-  View,
+  FlatList,
+  Image,
+  SafeAreaView,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  FlatList,
-  StyleSheet,
-  Image,
-  SafeAreaView,
+  View,
 } from "react-native";
-import { useRouter } from "expo-router";
-import seriesData from "@/assets/data/serie.json";
-
-const categorie = ["Fantascienza", "Fantasy", "Dramma", "Commedia"];
-const piattaforme = ["Netflix", "Disney+", "Amazon Prime", "HBO"];
-const stati = ["in corso", "completata"];
 
 export default function SearchScreen() {
   const [titolo, setTitolo] = useState("");
   const [categoria, setCategoria] = useState("");
   const [piattaforma, setPiattaforma] = useState("");
   const [stato, setStato] = useState("");
+
+  const [serie, setSerie] = useState<any[]>([]);
+  const [categorie, setCategorie] = useState<string[]>([]);
+  const [piattaforme, setPiattaforme] = useState<string[]>([]);
+
   const router = useRouter();
 
-  const filtrate = seriesData.filter((serie) => {
+  // 🔁 Carica le serie e categorie dinamiche
+  useEffect(() => {
+    const caricaDati = async () => {
+      const serieRaw = await AsyncStorage.getItem("serie.json");
+      const serieData = serieRaw ? JSON.parse(serieRaw) : [];
+      setSerie(serieData);
+
+      const categorieRaw = await AsyncStorage.getItem("categorie_dati");
+      if (categorieRaw) {
+        const parsed = JSON.parse(categorieRaw);
+        setCategorie(parsed.generi.map((g: any) => g.nome));
+        setPiattaforme(parsed.piattaforme.map((p: any) => p.nome));
+      }
+    };
+
+    caricaDati();
+  }, []);
+
+  const filtrate = serie.filter((s) => {
     return (
-      serie.titolo.toLowerCase().includes(titolo.toLowerCase()) &&
-      (categoria ? serie.categoria === categoria : true) &&
-      (piattaforma ? serie.piattaforma === piattaforma : true) &&
-      (stato ? serie.stato === stato : true)
+      s.titolo?.toLowerCase().includes(titolo.toLowerCase()) &&
+      (categoria ? s.genere === categoria : true) &&
+      (piattaforma ? s.piattaforma === piattaforma : true) &&
+      (stato ? s.stato === stato : true)
     );
   });
 
@@ -37,17 +56,26 @@ export default function SearchScreen() {
       style={styles.card}
       onPress={() => router.push(`/serie/${item.id}`)}
     >
-      <Image source={{ uri: item.image }} style={styles.image} />
+      <Image
+        source={{
+          uri: item.poster_path
+            ? `https://image.tmdb.org/t/p/w185${item.poster_path}`
+            : item.image || "https://via.placeholder.com/120x180?text=?",
+        }}
+        style={styles.image}
+      />
       <View style={{ flex: 1 }}>
         <Text style={styles.title} numberOfLines={1}>
           {item.titolo}
         </Text>
         <Text style={styles.subtitle}>
-          {item.categoria} • {item.piattaforma}
+          {item.genere || "-"} • {item.piattaforma || "-"}
         </Text>
       </View>
     </TouchableOpacity>
   );
+
+  const stati = ["in corso", "completata"];
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -60,7 +88,7 @@ export default function SearchScreen() {
           onChangeText={setTitolo}
         />
 
-        <Text style={styles.label}>Categoria</Text>
+        <Text style={styles.label}>Genere</Text>
         <View style={styles.tagsContainer}>
           {categorie.map((cat) => (
             <TouchableOpacity
@@ -104,11 +132,13 @@ export default function SearchScreen() {
         </Text>
         <FlatList
           data={filtrate}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item, index) => item.id || item.titolo + index}
           renderItem={renderItem}
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
-            <Text style={{ color: "#888", marginTop: 20 }}>Nessun risultato</Text>
+            <Text style={{ color: "#888", marginTop: 20 }}>
+              Nessun risultato
+            </Text>
           }
           contentContainerStyle={{ paddingBottom: 100 }}
         />

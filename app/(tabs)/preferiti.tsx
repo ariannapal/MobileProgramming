@@ -1,6 +1,6 @@
 import { useFocusEffect } from "@react-navigation/native";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useCallback, useState } from "react";
 import {
   FlatList,
   Image,
@@ -10,6 +10,7 @@ import {
   View,
 } from "react-native";
 import { getFavorites } from "../utils/favoritesStorage";
+
 type FavoriteItem = {
   id: string;
   titolo?: string;
@@ -20,22 +21,29 @@ type FavoriteItem = {
 
 export default function PreferitiScreen() {
   const [favorites, setFavorites] = useState<FavoriteItem[]>([]);
-
   const router = useRouter();
 
-  // Carica i preferiti quando la schermata è in focus
   useFocusEffect(
-    React.useCallback(() => {
+    useCallback(() => {
+      let isActive = true;
+
       const loadFavorites = async () => {
         const data = await getFavorites();
-        setFavorites(data);
+        const valid = data.filter((item: any) => item?.id);
+        if (isActive) {
+          setFavorites(valid);
+        }
       };
 
       loadFavorites();
+
+      return () => {
+        isActive = false;
+      };
     }, [])
   );
 
-  const renderItem = ({ item }: any) => (
+  const renderItem = ({ item }: { item: FavoriteItem }) => (
     <TouchableOpacity
       style={styles.card}
       onPress={() => router.push(`/serie/${item.id}`)}
@@ -48,7 +56,6 @@ export default function PreferitiScreen() {
         }}
         style={styles.image}
       />
-
       <Text style={styles.title} numberOfLines={2}>
         {item.titolo || item.title}
       </Text>
@@ -64,7 +71,9 @@ export default function PreferitiScreen() {
       ) : (
         <FlatList
           data={favorites}
-          keyExtractor={(item) => item.id.toString()}
+          keyExtractor={(item, index) =>
+            item?.id ? item.id.toString() : `fallback-${index}`
+          }
           horizontal
           renderItem={renderItem}
           contentContainerStyle={styles.horizontalList}

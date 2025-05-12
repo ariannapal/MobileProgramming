@@ -145,7 +145,7 @@ export default function AggiungiModificaScreen() {
   };
   const salvaSerieNelJson = async () => {
     try {
-      const nuovaSerie = { ...form };
+      const nuovaSerie = { id: Date.now().toString(), ...form };
       // 🔄 aggiorna le categorie se mancano
       const categorieRaw = await AsyncStorage.getItem("categorie_dati");
       let categorie = categorieRaw
@@ -407,3 +407,4 @@ const styles = StyleSheet.create({
     backgroundColor: "#0f0f2a",
   },
 });
+

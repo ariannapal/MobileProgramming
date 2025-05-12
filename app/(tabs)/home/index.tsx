@@ -108,7 +108,7 @@ export default function HomeScreen() {
           style={styles.addButtonCard}
           onPress={fetchNuovaSerie}
         >
-          <Ionicons name="refresh-circle" size={50} color="#fff" />
+         <Ionicons name="add-circle" size={50} color="#fff" />
           <Text style={styles.addButtonText}>Scopri nuova serie</Text>
         </TouchableOpacity>
       );

@@ -12,8 +12,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { isFavorite, saveFavorite } from "../utils/favoritesStorage";
-
+import { isFavorite, removeFavorite, saveFavorite } from "../utils/favoritesStorage";
 
 export default function SerieDettaglioScreen() {
  const [isFav, setIsFav] = useState(false);
@@ -101,6 +100,10 @@ export default function SerieDettaglioScreen() {
           console.log("DEBUG: Nuova lista dopo filtro", nuovaLista); // Aggiungi un log
   
           await AsyncStorage.setItem("serie.json", JSON.stringify(nuovaLista));
+
+          // Elimina anche dai preferiti
+          await removeFavorite(serie.id);
+
           router.back(); // Torna indietro dopo l'eliminazione
         },
       },
@@ -215,4 +218,3 @@ const styles = StyleSheet.create({
    fontSize: 16,
  },
  });
-

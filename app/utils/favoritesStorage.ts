@@ -21,3 +21,9 @@ export async function isFavorite(id: string): Promise<boolean> {
   const favorites = await getFavorites();
   return favorites.some((f) => f.id === id);
 }
+
+export async function removeFavorite(id: string): Promise<void> {
+  const favorites = await getFavorites();
+  const updated = favorites.filter((f) => f.id !== id);
+  await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+}

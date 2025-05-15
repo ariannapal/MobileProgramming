@@ -1,5 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Picker } from "@react-native-picker/picker";
+import { Checkbox } from "expo-checkbox";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
@@ -12,9 +14,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { isFavorite, saveFavorite } from "../utils/favoritesStorage";
-import { Picker } from "@react-native-picker/picker";
-import { Checkbox } from "expo-checkbox";
+import { isFavorite, removeFavorite, saveFavorite } from "../utils/favoritesStorage";
 
 export default function SerieDettaglioScreen() {
   const [isFav, setIsFav] = useState(false);
@@ -116,17 +116,27 @@ export default function SerieDettaglioScreen() {
           text: "Elimina",
           style: "destructive",
           onPress: async () => {
+            console.log("Eliminazione serie:", serie.id);
+  
             const data = await AsyncStorage.getItem("serie.json");
-            if (!data) return;
+            if (!data) {
+              console.log("Nessun dato in serie.json");
+              return;
+            }
             const lista = JSON.parse(data);
             const nuovaLista = lista.filter((s: any) => String(s.id) !== String(serie.id));
             await AsyncStorage.setItem("serie.json", JSON.stringify(nuovaLista));
+            console.log("Serie rimossa da serie.json");
+  
+            await removeFavorite(serie.id);
+            console.log("Serie rimossa dai preferiti");
+  
             router.back();
           },
         },
       ]
     );
-  };
+  };  
 
   if (!serie) {
     return (

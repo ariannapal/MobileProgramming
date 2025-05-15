@@ -3,98 +3,155 @@ import React, { useEffect, useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { PieChart } from "react-native-chart-kit";
 
-type Serie = {
-  id?: string;
-  titolo: string;
-  stato?: string;
-  genere?: string;
-  piattaforma?: string;
-  episodiVisti?: number;
-  totaleEpisodi?: number;
-};
-
-export default function StatisticheScreen() {
-  const [serie, setSerie] = useState<Serie[]>([]);
+const StatisticheScreen = () => {
+  const [statistiche, setStatistiche] = useState<any>(null);
 
   useEffect(() => {
-    const loadData = async () => {
-      const json = await AsyncStorage.getItem("serie.json");
-      const data = json ? JSON.parse(json) : [];
-      setSerie(data);
+    // Funzione per caricare le statistiche da AsyncStorage
+    const fetchData = async () => {
+      try {
+        const serieData = await AsyncStorage.getItem("serie.json");
+        if (serieData !== null) {
+          const parsed = JSON.parse(serieData);
+
+          // Calcola il totale delle serie
+          const totaleSerie = parsed.length;
+
+          // Calcola il totale delle serie completate
+          const completate = parsed.filter(
+            (serie: any) => serie.stato === "Completata"
+          ).length;
+
+          // Calcola il totale delle serie in corso
+          const inCorso = parsed.filter(
+            (serie: any) => serie.stato === "In corso"
+          ).length;
+
+          // Calcola la distribuzione per Genere
+          const distribuzioneGenere = parsed.reduce((acc: any, serie: any) => {
+            const genere = serie.genere;
+            if (genere) {
+              acc[genere] = (acc[genere] || 0) + 1;
+            }
+            return acc;
+          }, {});
+
+          // Calcola la distribuzione per Piattaforma
+          const distribuzionePiattaforma = parsed.reduce(
+            (acc: any, serie: any) => {
+              const piattaforma = serie.piattaforma;
+              if (piattaforma) {
+                acc[piattaforma] = (acc[piattaforma] || 0) + 1;
+              }
+              return acc;
+            },
+            {}
+          );
+
+          // Imposta i dati delle statistiche
+          setStatistiche({
+            totaleSerie: {
+              seguita: totaleSerie,
+              completato: completate,
+              inCorso: inCorso,
+            },
+            distribuzioneGenere,
+            distribuzionePiattaforma,
+          });
+        }
+      } catch (error) {
+        console.error("Errore nel recupero delle serie da AsyncStorage", error);
+      }
     };
 
-    loadData();
+    fetchData();
   }, []);
 
-  // Calcoli statistici
-  const totale = {
-    seguito: serie.filter((s) => s.stato?.toLowerCase() === "in corso").length,
-    completato: serie.filter((s) => s.stato?.toLowerCase() === "completata").length,
-    inPausa: serie.filter((s) => s.stato?.toLowerCase() === "in pausa").length,
-  };
+  if (!statistiche) {
+    return <Text style={styles.loadingText}>Caricamento...</Text>;
+  }
 
-  const distribuzioneGenere: Record<string, number> = {};
-  const distribuzionePiattaforma: Record<string, number> = {};
-
-  serie.forEach((s) => {
-    if (s.genere) distribuzioneGenere[s.genere] = (distribuzioneGenere[s.genere] || 0) + 1;
-    if (s.piattaforma) distribuzionePiattaforma[s.piattaforma] = (distribuzionePiattaforma[s.piattaforma] || 0) + 1;
-  });
-
-  const chartData = (data: Record<string, number>) =>
-    Object.entries(data).map(([key, value]) => ({
-      name: key,
-      population: value,
-      color: randomColor(),
-      legendFontColor: "#7F7F7F",
-      legendFontSize: 15,
-    }));
+  // Funzione di debug per controllare i dati
+  console.log("Distribuzione Genere:", statistiche.distribuzioneGenere);
+  console.log(
+    "Distribuzione Piattaforma:",
+    statistiche.distribuzionePiattaforma
+  );
 
   return (
     <ScrollView style={styles.container}>
       <View style={styles.statSection}>
         <Text style={styles.title}>Totale Serie</Text>
-        <Text style={styles.statText}>Seguite: {totale.seguito}</Text>
-        <Text style={styles.statText}>Completate: {totale.completato}</Text>
-        <Text style={styles.statText}>In Pausa: {totale.inPausa}</Text>
+        <Text style={styles.statText}>
+          Seguite: {statistiche.totaleSerie.seguita}
+        </Text>
+        <Text style={styles.statText}>
+          Completate: {statistiche.totaleSerie.completato}
+        </Text>
+        <Text style={styles.statText}>
+          In Corso: {statistiche.totaleSerie.inCorso}
+        </Text>
       </View>
 
+      {/* Distribuzione per Genere */}
       <View style={styles.chartSection}>
         <Text style={styles.title}>Distribuzione per Genere</Text>
-        <PieChart
-          data={chartData(distribuzioneGenere)}
-          width={300}
-          height={200}
-          chartConfig={chartConfig}
-          accessor="population"
-          backgroundColor="transparent"
-          paddingLeft="15"
-        />
+        {statistiche.distribuzioneGenere &&
+        Object.keys(statistiche.distribuzioneGenere).length > 0 ? (
+          <PieChart
+            data={Object.entries(statistiche.distribuzioneGenere).map(
+              ([key, value]) => ({
+                name: key,
+                population: value,
+                color: randomColor(),
+                legendFontColor: "#7F7F7F",
+                legendFontSize: 15,
+              })
+            )}
+            width={300}
+            height={200}
+            chartConfig={chartConfig}
+            accessor="population"
+            backgroundColor="transparent"
+            paddingLeft="15"
+          />
+        ) : (
+          <Text style={styles.statText}>
+            Nessun dato disponibile per il genere.
+          </Text>
+        )}
       </View>
 
+      {/* Distribuzione per Piattaforma */}
       <View style={styles.chartSection}>
         <Text style={styles.title}>Distribuzione per Piattaforma</Text>
-        <PieChart
-          data={chartData(distribuzionePiattaforma)}
-          width={300}
-          height={200}
-          chartConfig={chartConfig}
-          accessor="population"
-          backgroundColor="transparent"
-          paddingLeft="15"
-        />
+        {statistiche.distribuzionePiattaforma &&
+        Object.keys(statistiche.distribuzionePiattaforma).length > 0 ? (
+          <PieChart
+            data={Object.entries(statistiche.distribuzionePiattaforma).map(
+              ([key, value]) => ({
+                name: key,
+                population: value,
+                color: randomColor(),
+                legendFontColor: "#7F7F7F",
+                legendFontSize: 15,
+              })
+            )}
+            width={300}
+            height={200}
+            chartConfig={chartConfig}
+            accessor="population"
+            backgroundColor="transparent"
+            paddingLeft="15"
+          />
+        ) : (
+          <Text style={styles.statText}>
+            Nessun dato disponibile per la piattaforma.
+          </Text>
+        )}
       </View>
     </ScrollView>
   );
-}
-
-const randomColor = () => {
-  const letters = '0123456789ABCDEF';
-  let color = '#';
-  for (let i = 0; i < 6; i++) {
-    color += letters[Math.floor(Math.random() * 16)];
-  }
-  return color;
 };
 
 const chartConfig = {
@@ -109,6 +166,13 @@ const chartConfig = {
 };
 
 const styles = StyleSheet.create({
+  loadingText: {
+    fontSize: 16,
+    fontStyle: "italic",
+    color: "#ccc",
+    textAlign: "center",
+    marginTop: 20,
+  },
   container: {
     flex: 1,
     backgroundColor: "#0f0f2a",
@@ -131,8 +195,19 @@ const styles = StyleSheet.create({
     color: "#ccc",
   },
   chartSection: {
-    marginVertical: 25,
+    marginVertical: 20,
     alignItems: "center",
   },
 });
 
+// Funzione per generare colori casuali per il grafico
+const randomColor = () => {
+  const letters = "0123456789ABCDEF";
+  let color = "#";
+  for (let i = 0; i < 6; i++) {
+    color += letters[Math.floor(Math.random() * 16)];
+  }
+  return color;
+};
+
+export default StatisticheScreen;

@@ -89,8 +89,20 @@ export default function HomeScreen() {
         genresMap[g.id] = g.name;
       });
 
-      const randomIndex = Math.floor(Math.random() * data.results.length);
-      const show = data.results[randomIndex];
+const serieEsistenti = new Set(suggestedSeries.map((s) => s.id));
+const serieDisponibili = data.results.filter(
+  (s: any) => !serieEsistenti.has(s.id?.toString())
+);
+
+// Se non ci sono nuove serie disponibili, esci
+if (serieDisponibili.length === 0) {
+  console.warn("Nessuna nuova serie da suggerire");
+  return;
+}
+
+// Seleziona una serie casuale tra quelle non ancora suggerite
+const randomIndex = Math.floor(Math.random() * serieDisponibili.length);
+const show = serieDisponibili[randomIndex];
 
       const nuovaSerie: Serie = {
         id: show.id?.toString(),

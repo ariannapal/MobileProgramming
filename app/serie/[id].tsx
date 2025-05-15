@@ -1,5 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Picker } from "@react-native-picker/picker";
+import { Checkbox } from "expo-checkbox"; // Importa il componente Checkbox
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
@@ -12,209 +14,294 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { isFavorite, removeFavorite, saveFavorite } from "../utils/favoritesStorage";
+import { isFavorite, saveFavorite } from "../utils/favoritesStorage";
 
 export default function SerieDettaglioScreen() {
- const [isFav, setIsFav] = useState(false);
- const { id } = useLocalSearchParams();
- const idString = Array.isArray(id) ? id[0] : id;
- const router = useRouter();
- const [serie, setSerie] = useState<any | null>(null);
-
-
- /*useEffect(() => {
-   const fetchSerie = async () => {
-     const data = await AsyncStorage.getItem("serie.json");
-     const lista = data ? JSON.parse(data) : [];
-     const trovata = lista.find((s: any) => s.id === idString); // Assicurati che 'id' sia corretto
-     setSerie(trovata); // Imposta la serie trovata
-   };
-    fetchSerie();
- }, [id]);*/
-
-
- useEffect(() => {
-   const fetchSerie = async () => {
-     const data = await AsyncStorage.getItem("serie.json");
-     const lista = data ? JSON.parse(data) : [];
-      console.log("DEBUG: lista JSON", lista);
-     console.log("DEBUG: id cercato:", idString);
-      //const trovata = lista.find((s: any) => String(s.id) === String(idString));
-     /*const trovata = lista.find(
-       (s: any) =>
-         String(s.id) === String(idString) || s.titolo === idString
-     );*/
-     const trovata = lista.find(
-      (s: any) => String(s.id) === String(idString)
-    );
-    
-     console.log("DEBUG: serie trovata:", trovata);
-      setSerie(trovata);
-   };
-    fetchSerie();
- }, [id]);
- 
-
-
- useEffect(() => {
-   if (serie) {
-     isFavorite(serie.id).then((favoriteStatus) => {
-       setIsFav(!!favoriteStatus);  // Assicurati che il valore sia booleano
-     });
-   }
- }, [serie]);
-
-
- const toggleFavorite = async () => {
-   if (serie) {
-     await saveFavorite(serie);
-     const updated = await isFavorite(serie.id);
-     setIsFav(updated);
-   }
- };
-
-
- const deleteSerie = () => {
-  console.log("Tentativo di eliminazione");
-  Alert.alert(
-    "Conferma eliminazione",
-    "Sei sicuro di voler eliminare questa serie?",
-    [
-      {
-        text: "Annulla",
-        style: "cancel",
-      },
-      {
-        text: "Elimina",
-        style: "destructive",
-        onPress: async () => {
-          const data = await AsyncStorage.getItem("serie.json");
-          if (!data) return;
-  
-          const lista = JSON.parse(data);
-          console.log("DEBUG: Lista prima del filtro", lista); // Aggiungi un log
-          const nuovaLista = lista.filter(
-            (s: any) => String(s.id) !== String(serie.id)
-          );
-          console.log("DEBUG: id serie:", serie.id);
-          console.log("DEBUG: Nuova lista dopo filtro", nuovaLista); // Aggiungi un log
-  
-          await AsyncStorage.setItem("serie.json", JSON.stringify(nuovaLista));
-
-          // Elimina anche dai preferiti
-          await removeFavorite(serie.id);
-
-          router.back(); // Torna indietro dopo l'eliminazione
-        },
-      },
-    ],
-    { cancelable: true }
+  const [isFav, setIsFav] = useState(false);
+  const { id } = useLocalSearchParams();
+  const idString = Array.isArray(id) ? id[0] : id;
+  const router = useRouter();
+  const [serie, setSerie] = useState<any | null>(null);
+  const [stagioneSelezionata, setStagioneSelezionata] = useState<number | null>(
+    null
   );
-};
+  const [episodiVisti, setEpisodiVisti] = useState<{ [key: string]: boolean }>(
+    {}
+  );
 
+  // Recupera la serie e aggiorna gli episodi visti
+  useEffect(() => {
+    const fetchSerie = async () => {
+      const data = await AsyncStorage.getItem("serie.json");
+      const lista = data ? JSON.parse(data) : [];
+      const trovata = lista.find((s: any) => String(s.id) === String(idString));
+      setSerie(trovata);
+    };
+    fetchSerie();
+  }, [id]);
 
+  // Aggiorna lo stato del "favorito"
+  useEffect(() => {
+    if (serie) {
+      isFavorite(serie.id).then((favoriteStatus) => {
+        setIsFav(!!favoriteStatus);
+      });
+    }
+  }, [serie]);
 
- // se non trova la serie: spoiler non la trova maiiiii
- if (!serie) {
-   return (
-     <View style={styles.center}>
-       <Text style={{ color: "#fff" }}>Caricamento...</Text>
-     </View>
-   );
- }
+  // Carica gli episodi visti per la stagione selezionata
+  useEffect(() => {
+    const loadEpisodi = async () => {
+      if (serie && stagioneSelezionata !== null) {
+        const key = `episodiVisti-${serie.id}-s${stagioneSelezionata}`;
+        const data = await AsyncStorage.getItem(key);
+        if (data) {
+          setEpisodiVisti(JSON.parse(data));
+        } else {
+          setEpisodiVisti({});
+        }
+      }
+    };
+    loadEpisodi();
+  }, [stagioneSelezionata]);
 
+  // Funzione per aggiornare lo stato di un episodio (visto/non visto)
+  const toggleEpisodioVisto = async (index: number) => {
+    const updated = { ...episodiVisti, [index]: !episodiVisti[index] };
+    setEpisodiVisti(updated);
 
+    const key = `episodiVisti-${serie.id}-s${stagioneSelezionata}`;
+    await AsyncStorage.setItem(key, JSON.stringify(updated));
+  };
 
+  // Funzione per segnare la serie come preferita
+  const toggleFavorite = async () => {
+    if (serie) {
+      await saveFavorite(serie);
+      const updated = await isFavorite(serie.id);
+      setIsFav(updated);
+    }
+  };
 
- return (
-   <ScrollView style={styles.container}>
-     <Pressable onPress={() => router.back()} style={styles.back}>
-       <Ionicons name="chevron-back" size={24} color="#fff" />
-       <Text style={styles.backText}>Indietro</Text>
-     </Pressable>
+  // Funzione per eliminare la serie
+  const deleteSerie = () => {
+    Alert.alert(
+      "Conferma eliminazione",
+      "Sei sicuro di voler eliminare questa serie?",
+      [
+        { text: "Annulla", style: "cancel" },
+        {
+          text: "Elimina",
+          style: "destructive",
+          onPress: async () => {
+            const data = await AsyncStorage.getItem("serie.json");
+            if (!data) return;
+            const lista = JSON.parse(data);
+            const nuovaLista = lista.filter(
+              (s: any) => String(s.id) !== String(serie.id)
+            );
+            await AsyncStorage.setItem(
+              "serie.json",
+              JSON.stringify(nuovaLista)
+            );
+            router.back();
+          },
+        },
+      ],
+      { cancelable: true }
+    );
+  };
 
+  if (!serie) {
+    return (
+      <View style={styles.center}>
+        <Text style={{ color: "#fff" }}>Caricamento...</Text>
+      </View>
+    );
+  }
 
-     <Image
- source={{
-   uri: serie.poster_path
-     ? `https://image.tmdb.org/t/p/w342${serie.poster_path}`
-     : 'https://via.placeholder.com/342x480?text=No+Image'
- }}
- style={styles.poster}
-/>
-     <View style={styles.titleRow}>
-       <Text style={styles.title}>{serie.titolo}</Text>
-       <TouchableOpacity onPress={toggleFavorite}>
-         <Ionicons
-           name={isFav ? "star" : "star-outline"}
-           size={24}
-           color="gold"
-           style={styles.favoriteIcon}
-         />
-       </TouchableOpacity>
-     </View>
-     <Text style={styles.meta}>
-       ⭐ {serie.rating} · {serie.anno}
-     </Text>
-     <Text style={styles.desc}>{serie.trama ?? "Trama non disponibile."}</Text>
-     <TouchableOpacity onPress={deleteSerie} style={styles.deleteButton}>
-       <Text style={styles.deleteButtonText}>Elimina Serie</Text>
-     </TouchableOpacity>
+  const stagioni = serie?.stagioniDettagli ?? [];
+  const episodiStagioneCorrente =
+    stagioni.find((s: any) => s.stagione === stagioneSelezionata)?.episodi ?? 0;
 
+  return (
+    <ScrollView style={styles.container}>
+      <Pressable onPress={() => router.back()} style={styles.back}>
+        <Ionicons name="chevron-back" size={24} color="#fff" />
+        <Text style={styles.backText}>Indietro</Text>
+      </Pressable>
 
-   </ScrollView>
- );
+      <Image
+        source={{
+          uri: serie.poster_path
+            ? `https://image.tmdb.org/t/p/w342${serie.poster_path}`
+            : "https://via.placeholder.com/342x480?text=No+Image",
+        }}
+        style={styles.poster}
+      />
+
+      <View style={styles.titleRow}>
+        <Text style={styles.title}>{serie.titolo}</Text>
+        <TouchableOpacity onPress={toggleFavorite}>
+          <Ionicons
+            name={isFav ? "star" : "star-outline"}
+            size={24}
+            color="gold"
+            style={styles.favoriteIcon}
+          />
+        </TouchableOpacity>
+      </View>
+
+      <Text style={styles.meta}>
+        ⭐ {serie.rating} · {serie.anno}
+      </Text>
+      <Text style={styles.desc}>{serie.trama ?? "Trama non disponibile."}</Text>
+
+      {/* Picker per le stagioni */}
+      {stagioni.length > 0 && (
+        <>
+          <Text style={styles.sectionTitle}>Stagioni</Text>
+          <Picker
+            selectedValue={stagioneSelezionata}
+            onValueChange={(value) => setStagioneSelezionata(value)}
+            style={styles.picker}
+            dropdownIconColor="#fff"
+          >
+            <Picker.Item label="Seleziona una stagione" value={null} />
+            {stagioni.map((stagione: any) => (
+              <Picker.Item
+                key={stagione.stagione}
+                label={`Stagione ${stagione.stagione}`}
+                value={stagione.stagione}
+              />
+            ))}
+          </Picker>
+
+          {/* Lista episodi */}
+          {stagioneSelezionata !== null && (
+            <View style={styles.episodiContainer}>
+              {[...Array(episodiStagioneCorrente)].map((_, i) => (
+                <TouchableOpacity
+                  key={i}
+                  style={styles.episodioRow}
+                  onPress={() => toggleEpisodioVisto(i)}
+                >
+                  <Text style={styles.episodio}>
+                    S{stagioneSelezionata} E{i + 1}
+                  </Text>
+                  {/* Utilizzo di expo-checkbox per il checkbox */}
+                  <Checkbox
+                    style={styles.checkbox}
+                    value={episodiVisti[i]}
+                    onValueChange={() => toggleEpisodioVisto(i)}
+                  />
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+        </>
+      )}
+
+      <TouchableOpacity onPress={deleteSerie} style={styles.deleteButton}>
+        <Text style={styles.deleteButtonText}>Elimina Serie</Text>
+      </TouchableOpacity>
+    </ScrollView>
+  );
 }
 
-
 const styles = StyleSheet.create({
- container: { flex: 1, backgroundColor: "#0f0f2a", padding: 16 },
- back: { flexDirection: "row", alignItems: "center", marginBottom: 12 },
- backText: { color: "#fff", marginLeft: 4 },
- meta: { color: "#ccc", fontSize: 15, marginBottom: 10 },
- desc: { color: "#ddd", fontSize: 16, lineHeight: 22 },
- center: {
-   flex: 1,
-   justifyContent: "center",
-   alignItems: "center",
-   backgroundColor: "#0f0f2a",
- },
- titleRow: {
-   flexDirection: "row",
-   alignItems: "center",
-   justifyContent: "space-between",
-   marginVertical: 10,
- },
- title: {
-   fontSize: 24,
-   fontWeight: "bold",
-   color: "#fff",
-   flex: 1,
-   marginRight: 10,
- },
- icon: {
-   paddingHorizontal: 4,
- },
- favoriteIcon: {
-   paddingHorizontal: 4,
- },
- poster: {
-   width: "100%", // Mantieni la larghezza al 100%
-   height: 320,   // Imposta un'altezza fissa
-   borderRadius: 12,
-   marginBottom: 16,
-   resizeMode: "cover",  // Impedisce che l'immagine venga deformata
- }, 
- deleteButton: {
-   backgroundColor: "#ff4d4d",
-   padding: 12,
-   borderRadius: 8,
-   marginTop: 20,
-   alignItems: "center",
- },
- deleteButtonText: {
-   color: "#fff",
-   fontWeight: "bold",
-   fontSize: 16,
- },
- });
+  container: {
+    backgroundColor: "#0f0f2a",
+    flex: 1,
+    padding: 16,
+  },
+  back: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  backText: {
+    color: "#fff",
+    marginLeft: 8,
+    fontSize: 16,
+  },
+  poster: {
+    width: "100%",
+    height: 480,
+    resizeMode: "cover",
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  titleRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  title: {
+    fontSize: 24,
+    color: "#fff",
+    fontWeight: "bold",
+    flex: 1,
+  },
+  favoriteIcon: {
+    marginLeft: 8,
+  },
+  meta: {
+    color: "#aaa",
+    fontSize: 14,
+    marginBottom: 8,
+  },
+  desc: {
+    color: "#ddd",
+    fontSize: 16,
+    marginBottom: 16,
+  },
+  sectionTitle: {
+    color: "#fff",
+    fontSize: 18,
+    marginVertical: 12,
+    fontWeight: "600",
+  },
+  picker: {
+    backgroundColor: "#222",
+    color: "#fff",
+    marginBottom: 10,
+  },
+  episodiContainer: {
+    marginBottom: 20,
+  },
+  episodio: {
+    color: "#fff",
+    backgroundColor: "#333",
+    padding: 10,
+    borderRadius: 8,
+    margin: 4,
+    fontSize: 14,
+  },
+  episodioRow: {
+    flexDirection: "row",
+    justifyContent: "space-between", // Sposta il checkbox a destra
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  checkbox: {
+    marginLeft: 8, // Per separare il checkbox dal testo
+  },
+  deleteButton: {
+    backgroundColor: "red",
+    padding: 12,
+    borderRadius: 8,
+    alignItems: "center",
+    marginTop: 20,
+  },
+  deleteButtonText: {
+    color: "#fff",
+    fontWeight: "bold",
+  },
+  center: {
+    flex: 1,
+    backgroundColor: "#0f0f2a",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+});

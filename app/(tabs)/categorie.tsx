@@ -5,6 +5,7 @@ import { useRouter } from "expo-router";
 import React, { useCallback, useState } from "react";
 
 import {
+  Alert,
   Button,
   Modal,
   Pressable,
@@ -202,6 +203,17 @@ const CategorieScreen = () => {
             </View>
           </View>
         </Modal>
+        <Button
+          title="🔄 Reset categorie"
+          onPress={async () => {
+            await AsyncStorage.setItem(
+              STORAGE_KEY,
+              JSON.stringify(categorieJson)
+            );
+            setCategorie(categorieJson);
+            Alert.alert("Reset", "Categorie ripristinate ai valori iniziali");
+          }}
+        />
       </ScrollView>
     </SafeAreaView>
   );

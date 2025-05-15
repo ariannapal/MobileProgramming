@@ -12,6 +12,7 @@ import {
   View,
 } from "react-native";
 
+import { useFocusEffect } from "@react-navigation/native"; 
 export default function SearchScreen() {
   const [titolo, setTitolo] = useState("");
   const [categoria, setCategoria] = useState("");
@@ -24,23 +25,31 @@ export default function SearchScreen() {
 
   const router = useRouter();
 
-  // 🔁 Carica le serie e categorie dinamiche
-  useEffect(() => {
-    const caricaDati = async () => {
+// Carica le categorie solo una volta
+useEffect(() => {
+  const caricaCategorie = async () => {
+    const categorieRaw = await AsyncStorage.getItem("categorie_dati");
+    if (categorieRaw) {
+      const parsed = JSON.parse(categorieRaw);
+      setCategorie(parsed.generi.map((g: any) => g.nome));
+      setPiattaforme(parsed.piattaforme.map((p: any) => p.nome));
+    }
+  };
+
+  caricaCategorie();
+}, []);
+
+useFocusEffect(
+  React.useCallback(() => {
+    const caricaSerie = async () => {
       const serieRaw = await AsyncStorage.getItem("serie.json");
       const serieData = serieRaw ? JSON.parse(serieRaw) : [];
       setSerie(serieData);
-
-      const categorieRaw = await AsyncStorage.getItem("categorie_dati");
-      if (categorieRaw) {
-        const parsed = JSON.parse(categorieRaw);
-        setCategorie(parsed.generi.map((g: any) => g.nome));
-        setPiattaforme(parsed.piattaforme.map((p: any) => p.nome));
-      }
     };
 
-    caricaDati();
-  }, []);
+    caricaSerie();
+  }, [])
+);
 
   const filtrate = serie.filter((s) => {
     return (

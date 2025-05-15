@@ -1,6 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useFocusEffect } from "@react-navigation/native";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import {
   FlatList,
   Image,
@@ -28,20 +29,22 @@ export default function CategoriaScreen() {
 
   const [serieFiltrate, setSerieFiltrate] = useState<Serie[]>([]);
 
-  useEffect(() => {
-    const caricaSerie = async () => {
-      const data = await AsyncStorage.getItem("serie.json");
-      const tutteLeSerie: Serie[] = data ? JSON.parse(data) : [];
+  useFocusEffect(
+    useCallback(() => {
+      const caricaSerie = async () => {
+        const data = await AsyncStorage.getItem("serie.json");
+        const tutteLeSerie: Serie[] = data ? JSON.parse(data) : [];
 
-      const filtrate = tutteLeSerie.filter(
-        (s) => s.genere === nome || s.piattaforma === nome
-      );
+        const filtrate = tutteLeSerie.filter(
+          (s) => s.genere === nome || s.piattaforma === nome
+        );
 
-      setSerieFiltrate(filtrate);
-    };
+        setSerieFiltrate(filtrate);
+      };
 
-    caricaSerie();
-  }, [nome]);
+      caricaSerie();
+    }, [nome])
+  );
 
   const renderStars = (rating?: number) => {
     if (!rating) return null;

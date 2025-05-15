@@ -100,31 +100,48 @@ const CategorieScreen = () => {
   );
 
   const aggiungiCategoria = async () => {
-    if (!nomeCategoria.trim()) return;
-
+    const nomePulito = nomeCategoria.trim().toLowerCase();
+    if (!nomePulito) return;
+  
+    const listaEsistente =
+      tipoCategoria === "piattaforma"
+        ? categorie.piattaforme
+        : categorie.generi;
+  
+    const esisteGia = listaEsistente.some(
+      (cat) => cat.nome.trim().toLowerCase() === nomePulito
+    );
+  
+    if (esisteGia) {
+      Alert.alert(
+        "Categoria esistente",
+        `Esiste già una ${tipoCategoria === "piattaforma" ? "piattaforma" : "categoria di genere"} con questo nome.`
+      );
+      return;
+    }
+  
     const nuovaCategoria = {
       id: Date.now().toString(),
       nome: nomeCategoria.trim(),
       count: 0,
     };
-
+  
     const nuovoStato = {
       ...categorie,
       [tipoCategoria === "piattaforma" ? "piattaforme" : "generi"]: [
-        ...categorie[
-          tipoCategoria === "piattaforma" ? "piattaforme" : "generi"
-        ],
+        ...listaEsistente,
         nuovaCategoria,
       ],
     };
-
+  
     setCategorie(nuovoStato);
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(nuovoStato));
-
+  
     setNomeCategoria("");
     setTipoCategoria("piattaforma");
     setModalVisible(false);
   };
+  
 
   return (
     <SafeAreaView style={styles.container}>

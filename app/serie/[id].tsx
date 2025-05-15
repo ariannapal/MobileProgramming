@@ -1,9 +1,11 @@
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Picker } from "@react-native-picker/picker";
 import { Checkbox } from "expo-checkbox"; // Importa il componente Checkbox
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
+import { Platform } from "react-native";
+import SeasonPicker from "./SeasonPicker"; // adatta il path se necessario
+
 import {
   Alert,
   Image,
@@ -31,7 +33,6 @@ export default function SerieDettaglioScreen() {
     [stagione: string]: { [episodio: number]: boolean };
   }>({});
 
-  // Recupera la serie
   useEffect(() => {
     const fetchSerie = async () => {
       const data = await AsyncStorage.getItem("serie.json");
@@ -44,14 +45,12 @@ export default function SerieDettaglioScreen() {
     fetchSerie();
   }, [id]);
 
-  // Stato preferiti
   useEffect(() => {
     if (serie) {
       isFavorite(serie.id).then((fav) => setIsFav(fav));
     }
   }, [serie]);
 
-  // Carica gli episodi visti
   useEffect(() => {
     const loadEpisodi = async () => {
       if (serie) {
@@ -83,6 +82,30 @@ export default function SerieDettaglioScreen() {
 
     const key = `episodiVisti-${serie.id}`;
     await AsyncStorage.setItem(key, JSON.stringify(updatedData));
+
+    // Verifica se tutte le stagioni sono completate
+    const tutteLeStagioniComplete = serie.stagioniDettagli.every(
+      (stagione: any) => {
+        const key = `s${stagione.stagione}`;
+        const visti = updatedData[key] || {};
+        return Object.values(visti).filter(Boolean).length === stagione.episodi;
+      }
+    );
+
+    const nuovoStato = tutteLeStagioniComplete ? "Completata" : "In corso";
+
+    if (serie.stato !== nuovoStato) {
+      const data = await AsyncStorage.getItem("serie.json");
+      if (!data) return;
+
+      const lista = JSON.parse(data);
+      const aggiornata = lista.map((s: any) =>
+        String(s.id) === String(serie.id) ? { ...s, stato: nuovoStato } : s
+      );
+
+      await AsyncStorage.setItem("serie.json", JSON.stringify(aggiornata));
+      setSerie((prev: any) => prev && { ...prev, stato: nuovoStato });
+    }
   };
 
   const toggleFavorite = async () => {
@@ -164,44 +187,26 @@ export default function SerieDettaglioScreen() {
         </TouchableOpacity>
       </View>
 
-      <Text style={styles.meta}>{serie.anno}</Text>
-      <View style={{ flexDirection: "row", marginVertical: 8 }}>
-        {[1, 2, 3, 4, 5].map((value) => (
-          <TouchableOpacity key={value} onPress={() => setUserRating(value)}>
-            <Ionicons
-              name={value <= (userRating || 0) ? "star" : "star-outline"}
-              size={24}
-              color="gold"
-              style={{ marginHorizontal: 2 }}
-            />
-          </TouchableOpacity>
-        ))}
-      </View>
+      <Text style={styles.meta}>
+        ⭐ {serie.rating} · {serie.anno} ·{" "}
+        <Text
+          style={{
+            color: serie.stato === "Completata" ? "lightgreen" : "#aaa",
+          }}
+        >
+          {serie.stato === "Completata" ? "Completata ✅" : "In corso"}
+        </Text>
+      </Text>
 
       <Text style={styles.desc}>{serie.trama ?? "Trama non disponibile."}</Text>
 
       {stagioni.length > 0 && (
         <>
-          <Text style={styles.sectionTitle}>Stagioni</Text>
-          <View style={{ height: 8 }} />
-
-          <View style={styles.pickerWrapper}>
-            <Picker
-              selectedValue={stagioneSelezionata}
-              onValueChange={(value) => setStagioneSelezionata(value)}
-              style={styles.picker}
-              dropdownIconColor="#fff"
-            >
-              <Picker.Item label="Seleziona una stagione" value={null} />
-              {stagioni.map((stagione: any) => (
-                <Picker.Item
-                  key={stagione.stagione}
-                  label={`Stagione ${stagione.stagione}`}
-                  value={stagione.stagione}
-                />
-              ))}
-            </Picker>
-          </View>
+          <SeasonPicker
+            stagioni={stagioni.map((s: any) => s.stagione)}
+            stagioneSelezionata={stagioneSelezionata}
+            onChange={(val) => setStagioneSelezionata(val)}
+          />
 
           {stagioneSelezionata !== null && (
             <View style={styles.episodiContainer}>
@@ -250,16 +255,18 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   pickerWrapper: {
-    backgroundColor: "#1f1f3a",
+    backgroundColor: "#222",
     borderRadius: 12,
     paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingVertical: Platform.OS === "ios" ? 14 : 0,
     marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "#444",
   },
 
   picker: {
-    color: "#fff",
-    height: 48,
+    color: Platform.OS === "ios" ? "#fff" : undefined,
+    height: Platform.OS === "ios" ? 200 : 50,
     width: "100%",
   },
 
@@ -313,12 +320,12 @@ const styles = StyleSheet.create({
   },
   episodioRow: {
     flexDirection: "row",
-    justifyContent: "space-between", // Sposta il checkbox a destra
+    justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 8,
   },
   checkbox: {
-    marginLeft: 8, // Per separare il checkbox dal testo
+    marginLeft: 8,
   },
   deleteButton: {
     backgroundColor: "red",

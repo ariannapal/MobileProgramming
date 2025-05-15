@@ -25,9 +25,11 @@ export default function SerieDettaglioScreen() {
   const [stagioneSelezionata, setStagioneSelezionata] = useState<number | null>(
     null
   );
+
   const [episodiVisti, setEpisodiVisti] = useState<{ [key: string]: boolean }>(
     {}
   );
+  const [userRating, setUserRating] = useState<number | null>(null);
 
   // Recupera la serie e aggiorna gli episodi visti
   useEffect(() => {
@@ -36,6 +38,8 @@ export default function SerieDettaglioScreen() {
       const lista = data ? JSON.parse(data) : [];
       const trovata = lista.find((s: any) => String(s.id) === String(idString));
       setSerie(trovata);
+      console.log("SERIE TROVATA:", trovata);
+      console.log("Stagioni Dettagli:", trovata?.stagioniDettagli);
     };
     fetchSerie();
   }, [id]);
@@ -144,38 +148,51 @@ export default function SerieDettaglioScreen() {
         <Text style={styles.title}>{serie.titolo}</Text>
         <TouchableOpacity onPress={toggleFavorite}>
           <Ionicons
-            name={isFav ? "star" : "star-outline"}
+            name={isFav ? "heart" : "heart-outline"}
             size={24}
-            color="gold"
+            color="#ff4d6d"
             style={styles.favoriteIcon}
           />
         </TouchableOpacity>
       </View>
 
-      <Text style={styles.meta}>
-        ⭐ {serie.rating} · {serie.anno}
-      </Text>
+      <Text style={styles.meta}>{serie.anno}</Text>
+      <View style={{ flexDirection: "row", marginVertical: 8 }}>
+        {[1, 2, 3, 4, 5].map((value) => (
+          <TouchableOpacity key={value} onPress={() => setUserRating(value)}>
+            <Ionicons
+              name={value <= (userRating || 0) ? "star" : "star-outline"}
+              size={24}
+              color="gold"
+              style={{ marginHorizontal: 2 }}
+            />
+          </TouchableOpacity>
+        ))}
+      </View>
+
       <Text style={styles.desc}>{serie.trama ?? "Trama non disponibile."}</Text>
 
       {/* Picker per le stagioni */}
       {stagioni.length > 0 && (
         <>
           <Text style={styles.sectionTitle}>Stagioni</Text>
-          <Picker
-            selectedValue={stagioneSelezionata}
-            onValueChange={(value) => setStagioneSelezionata(value)}
-            style={styles.picker}
-            dropdownIconColor="#fff"
-          >
-            <Picker.Item label="Seleziona una stagione" value={null} />
-            {stagioni.map((stagione: any) => (
-              <Picker.Item
-                key={stagione.stagione}
-                label={`Stagione ${stagione.stagione}`}
-                value={stagione.stagione}
-              />
-            ))}
-          </Picker>
+          <View style={styles.pickerWrapper}>
+            <Picker
+              selectedValue={stagioneSelezionata}
+              onValueChange={(value) => setStagioneSelezionata(value)}
+              style={styles.picker}
+              dropdownIconColor="#fff"
+            >
+              <Picker.Item label="Seleziona una stagione" value={null} />
+              {stagioni.map((stagione: any) => (
+                <Picker.Item
+                  key={stagione.stagione}
+                  label={`Stagione ${stagione.stagione}`}
+                  value={stagione.stagione}
+                />
+              ))}
+            </Picker>
+          </View>
 
           {/* Lista episodi */}
           {stagioneSelezionata !== null && (
@@ -225,6 +242,17 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     fontSize: 16,
   },
+  pickerWrapper: {
+    borderRadius: 12,
+    backgroundColor: "#222",
+    marginBottom: 12,
+  },
+  picker: {
+    color: "#fff",
+    height: 50,
+    width: "100%",
+  },
+
   poster: {
     width: "100%",
     height: 480,
@@ -261,11 +289,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     marginVertical: 12,
     fontWeight: "600",
-  },
-  picker: {
-    backgroundColor: "#222",
-    color: "#fff",
-    marginBottom: 10,
   },
   episodiContainer: {
     marginBottom: 20,

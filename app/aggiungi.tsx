@@ -186,54 +186,79 @@ const handleSelectShow = async (item: any) => {
   const aggiornaCampo = (campo: string, valore: string) => {
     setForm((prev) => ({ ...prev, [campo]: valore }));
   };
-  const salvaSerieNelJson = async () => {
-    try {
-      const nuovaSerie = { id: Date.now().toString(), ...form,   stagioniDettagli: stagioniDettagli, };
-      // 🔄 aggiorna le categorie se mancano
-      const categorieRaw = await AsyncStorage.getItem("categorie_dati");
-      let categorie = categorieRaw
-        ? JSON.parse(categorieRaw)
-        : { generi: [], piattaforme: [] };
 
-      if (
-        nuovaSerie.genere &&
-        !categorie.generi.some((g: any) => g.nome === nuovaSerie.genere)
-      ) {
-        categorie.generi.push({
-          id: Date.now().toString() + "_gen",
-          nome: nuovaSerie.genere,
-        });
-      }
+ const salvaSerieNelJson = async () => {
+  try {
+    const nuovaSerie = {
+      id: Date.now().toString(),
+      ...form,
+      stagioniDettagli: stagioniDettagli,
+    };
 
-      if (
-        nuovaSerie.piattaforma &&
-        !categorie.piattaforme.some(
-          (p: any) => p.nome === nuovaSerie.piattaforma
-        )
-      ) {
-        categorie.piattaforme.push({
-          id: Date.now().toString() + "_plat",
-          nome: nuovaSerie.piattaforma,
-        });
-      }
-      await AsyncStorage.setItem("categorie_dati", JSON.stringify(categorie));
-      const esistenti = await AsyncStorage.getItem("serie.json");
-      const parsed = esistenti ? JSON.parse(esistenti) : [];
+    // Aggiorna categorie
+    const categorieRaw = await AsyncStorage.getItem("categorie_dati");
+    let categorie = categorieRaw
+      ? JSON.parse(categorieRaw)
+      : { generi: [], piattaforme: [] };
 
-      parsed.push(nuovaSerie);
-
-      await AsyncStorage.setItem("serie.json", JSON.stringify(parsed));
-
-      setSelectedShow(null);
-      console.log("Salvo:", nuovaSerie);
-
-      // Redirect alla home
-      router.replace("/home");
-    } catch (err) {
-      console.error("Errore nel salvataggio:", err);
-      alert("Errore durante il salvataggio");
+    if (
+      nuovaSerie.genere &&
+      !categorie.generi.some((g: any) => g.nome === nuovaSerie.genere)
+    ) {
+      categorie.generi.push({
+        id: Date.now().toString() + "_gen",
+        nome: nuovaSerie.genere,
+      });
     }
-  };
+
+    if (
+      nuovaSerie.piattaforma &&
+      !categorie.piattaforme.some((p: any) => p.nome === nuovaSerie.piattaforma)
+    ) {
+      categorie.piattaforme.push({
+        id: Date.now().toString() + "_plat",
+        nome: nuovaSerie.piattaforma,
+      });
+    }
+
+    await AsyncStorage.setItem("categorie_dati", JSON.stringify(categorie));
+
+    // Carica serie già salvate
+    const esistenti = await AsyncStorage.getItem("serie.json");
+    const parsed = esistenti ? JSON.parse(esistenti) : [];
+
+    parsed.push(nuovaSerie);
+    await AsyncStorage.setItem("serie.json", JSON.stringify(parsed));
+
+    // Tipi espliciti per oggetti
+    const episodiVistiTotali: { [stagione: string]: { [episodio: number]: boolean } } = {};
+
+    for (const stagione of stagioniDettagli) {
+      const numeroEpisodi = stagione.episodi;
+      const episodiStagione: { [episodio: number]: boolean } = {};
+
+      for (let i = 0; i < numeroEpisodi; i++) {
+        episodiStagione[i] = form.stato === "Completata";
+      }
+
+      episodiVistiTotali[`s${stagione.stagione}`] = episodiStagione;
+    }
+
+    const key = `episodiVisti-${nuovaSerie.id}`;
+    await AsyncStorage.setItem(key, JSON.stringify(episodiVistiTotali));
+
+    setSelectedShow(null);
+    console.log("Salvo:", nuovaSerie);
+
+    // Redirect alla home
+    router.replace("/home");
+  } catch (err) {
+    console.error("Errore nel salvataggio:", err);
+    alert("Errore durante il salvataggio");
+  }
+};
+
+
 
   return (
     <KeyboardAvoidingView

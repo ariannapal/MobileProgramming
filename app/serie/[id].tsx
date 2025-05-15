@@ -21,11 +21,14 @@ export default function SerieDettaglioScreen() {
   const { id } = useLocalSearchParams();
   const idString = Array.isArray(id) ? id[0] : id;
   const router = useRouter();
+
   const [serie, setSerie] = useState<any | null>(null);
   const [stagioneSelezionata, setStagioneSelezionata] = useState<number | null>(null);
-  const [episodiVisti, setEpisodiVisti] = useState<{ [key: string]: boolean }>({});
+  const [episodiVistiData, setEpisodiVistiData] = useState<{
+    [stagione: string]: { [episodio: number]: boolean };
+  }>({});
 
-  // Recupera la serie e aggiorna gli episodi visti
+  // Recupera la serie
   useEffect(() => {
     const fetchSerie = async () => {
       const data = await AsyncStorage.getItem("serie.json");
@@ -36,50 +39,54 @@ export default function SerieDettaglioScreen() {
     fetchSerie();
   }, [id]);
 
-  // Aggiorna lo stato del "favorito"
+  // Stato preferiti
   useEffect(() => {
     if (serie) {
-      isFavorite(serie.id).then((favoriteStatus) => {
-        setIsFav(!!favoriteStatus);
-      });
+      isFavorite(serie.id).then((fav) => setIsFav(fav));
     }
   }, [serie]);
 
-  // Carica gli episodi visti per la stagione selezionata
+  // Carica gli episodi visti
   useEffect(() => {
     const loadEpisodi = async () => {
-      if (serie && stagioneSelezionata !== null) {
-        const key = `episodiVisti-${serie.id}-s${stagioneSelezionata}`;
-        const data = await AsyncStorage.getItem(key);
-        if (data) {
-          setEpisodiVisti(JSON.parse(data));
-        } else {
-          setEpisodiVisti({});
-        }
+      if (serie) {
+        const key = `episodiVisti-${serie.id}`;
+        const stored = await AsyncStorage.getItem(key);
+        setEpisodiVistiData(stored ? JSON.parse(stored) : {});
       }
     };
     loadEpisodi();
-  }, [stagioneSelezionata]);
+  }, [serie]);
 
-  // Funzione per aggiornare lo stato di un episodio (visto/non visto)
   const toggleEpisodioVisto = async (index: number) => {
-    const updated = { ...episodiVisti, [index]: !episodiVisti[index] };
-    setEpisodiVisti(updated);
+    if (!serie || stagioneSelezionata === null) return;
 
-    const key = `episodiVisti-${serie.id}-s${stagioneSelezionata}`;
-    await AsyncStorage.setItem(key, JSON.stringify(updated));
+    const stagioneKey = `s${stagioneSelezionata}`;
+    const episodiStagione = episodiVistiData[stagioneKey] || {};
+
+    const updatedStagione = {
+      ...episodiStagione,
+      [index]: !episodiStagione[index],
+    };
+
+    const updatedData = {
+      ...episodiVistiData,
+      [stagioneKey]: updatedStagione,
+    };
+
+    setEpisodiVistiData(updatedData);
+
+    const key = `episodiVisti-${serie.id}`;
+    await AsyncStorage.setItem(key, JSON.stringify(updatedData));
   };
 
-  // Funzione per segnare la serie come preferita
   const toggleFavorite = async () => {
-    if (serie) {
-      await saveFavorite(serie);
-      const updated = await isFavorite(serie.id);
-      setIsFav(updated);
-    }
+    if (!serie) return;
+    await saveFavorite(serie);
+    const updated = await isFavorite(serie.id);
+    setIsFav(updated);
   };
 
-  // Funzione per eliminare la serie
   const deleteSerie = () => {
     Alert.alert(
       "Conferma eliminazione",
@@ -98,8 +105,7 @@ export default function SerieDettaglioScreen() {
             router.back();
           },
         },
-      ],
-      { cancelable: true }
+      ]
     );
   };
 
@@ -115,6 +121,11 @@ export default function SerieDettaglioScreen() {
   const episodiStagioneCorrente = stagioni.find(
     (s: any) => s.stagione === stagioneSelezionata
   )?.episodi ?? 0;
+
+  const episodiAttivi =
+    stagioneSelezionata !== null
+      ? episodiVistiData[`s${stagioneSelezionata}`] || {}
+      : {};
 
   return (
     <ScrollView style={styles.container}>
@@ -147,7 +158,6 @@ export default function SerieDettaglioScreen() {
       <Text style={styles.meta}>⭐ {serie.rating} · {serie.anno}</Text>
       <Text style={styles.desc}>{serie.trama ?? "Trama non disponibile."}</Text>
 
-      {/* Picker per le stagioni */}
       {stagioni.length > 0 && (
         <>
           <Text style={styles.sectionTitle}>Stagioni</Text>
@@ -167,7 +177,6 @@ export default function SerieDettaglioScreen() {
             ))}
           </Picker>
 
-          {/* Lista episodi */}
           {stagioneSelezionata !== null && (
             <View style={styles.episodiContainer}>
               {[...Array(episodiStagioneCorrente)].map((_, i) => (
@@ -177,10 +186,9 @@ export default function SerieDettaglioScreen() {
                   onPress={() => toggleEpisodioVisto(i)}
                 >
                   <Text style={styles.episodio}>S{stagioneSelezionata} E{i + 1}</Text>
-                  {/* Utilizzo di expo-checkbox per il checkbox */}
                   <Checkbox
                     style={styles.checkbox}
-                    value={episodiVisti[i]}
+                    value={!!episodiAttivi[i]}
                     onValueChange={() => toggleEpisodioVisto(i)}
                   />
                 </TouchableOpacity>

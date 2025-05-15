@@ -4,6 +4,8 @@ import { useFocusEffect } from "@react-navigation/native";
 import { useRouter } from "expo-router";
 import React, { useCallback, useState } from "react";
 import {
+  Alert,
+  Button,
   FlatList,
   Image,
   StyleSheet,
@@ -47,6 +49,14 @@ export default function HomeScreen() {
       loadSerie();
     }, [])
   );
+  const clearAllData = async () => {
+    try {
+      await AsyncStorage.removeItem("serie.json");
+      Alert.alert("Successo", "Dati delle serie TV cancellati");
+    } catch (e) {
+      console.error("Errore nella cancellazione dei dati", e);
+    }
+  };
 
   const fetchNuovaSerie = async () => {
     try {
@@ -108,7 +118,7 @@ export default function HomeScreen() {
           style={styles.addButtonCard}
           onPress={fetchNuovaSerie}
         >
-         <Ionicons name="add-circle" size={50} color="#fff" />
+          <Ionicons name="add-circle" size={50} color="#fff" />
           <Text style={styles.addButtonText}>Scopri nuova serie</Text>
         </TouchableOpacity>
       );
@@ -124,7 +134,10 @@ export default function HomeScreen() {
 
           if (!esiste && item.id && item.titolo) {
             const nuovaLista = [...lista, item];
-            await AsyncStorage.setItem("serie.json", JSON.stringify(nuovaLista));
+            await AsyncStorage.setItem(
+              "serie.json",
+              JSON.stringify(nuovaLista)
+            );
           }
 
           router.push(`/serie/${encodeURIComponent(item.id || item.titolo)}`);
@@ -186,6 +199,7 @@ export default function HomeScreen() {
         contentContainerStyle={styles.horizontalList}
         showsHorizontalScrollIndicator={false}
       />
+      <Button title="🧹 Reset AsyncStorage" onPress={clearAllData} />
     </View>
   );
 }

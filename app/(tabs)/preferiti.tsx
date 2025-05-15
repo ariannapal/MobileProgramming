@@ -1,7 +1,10 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect } from "@react-navigation/native";
 import { useRouter } from "expo-router";
 import React, { useCallback, useState } from "react";
 import {
+  Alert,
+  Button,
   FlatList,
   Image,
   StyleSheet,
@@ -42,6 +45,14 @@ export default function PreferitiScreen() {
       };
     }, [])
   );
+  const clearAllData = async () => {
+    try {
+      await AsyncStorage.removeItem("serie.json");
+      Alert.alert("Successo", "Dati delle serie TV cancellati");
+    } catch (e) {
+      console.error("Errore nella cancellazione dei dati", e);
+    }
+  };
 
   const renderItem = ({ item }: { item: FavoriteItem }) => (
     <TouchableOpacity
@@ -80,6 +91,7 @@ export default function PreferitiScreen() {
           showsHorizontalScrollIndicator={false}
         />
       )}
+      <Button title="🧹 Reset AsyncStorage" onPress={clearAllData} />
     </View>
   );
 }

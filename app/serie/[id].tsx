@@ -183,6 +183,8 @@ export default function SerieDettaglioScreen() {
       {stagioni.length > 0 && (
         <>
           <Text style={styles.sectionTitle}>Stagioni</Text>
+          <View style={{ height: 8 }} />
+
           <View style={styles.pickerWrapper}>
             <Picker
               selectedValue={stagioneSelezionata}
@@ -248,13 +250,16 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   pickerWrapper: {
+    backgroundColor: "#1f1f3a",
     borderRadius: 12,
-    backgroundColor: "#222",
-    marginBottom: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    marginBottom: 16,
   },
+
   picker: {
     color: "#fff",
-    height: 50,
+    height: 48,
     width: "100%",
   },
 

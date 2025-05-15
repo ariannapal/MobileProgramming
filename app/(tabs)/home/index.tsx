@@ -6,6 +6,7 @@ import React, { useCallback, useState } from "react";
 import {
   FlatList,
   Image,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -24,6 +25,7 @@ type Serie = {
 
 export default function HomeScreen() {
   const [serieViste, setSerieViste] = useState<Serie[]>([]);
+  const [serieCompletate, setSerieCompletate] = useState<Serie[]>([]);
   const [suggestedSeries, setSuggestedSeries] = useState<Serie[]>([
     { id: "loadMore", titolo: "Scopri nuova serie" },
   ]);
@@ -36,10 +38,17 @@ export default function HomeScreen() {
         try {
           const json = await AsyncStorage.getItem("serie.json");
           const data: Serie[] = json ? JSON.parse(json) : [];
+
           const serieInCorso = data.filter(
             (serie) => serie.stato?.toLowerCase().trim() === "in corso"
           );
+
+          const serieFatte = data.filter(
+            (serie) => serie.stato?.toLowerCase().trim() === "completata"
+          );
+
           setSerieViste(serieInCorso);
+          setSerieCompletate(serieFatte);
         } catch (err) {
           console.error("Errore nel caricamento delle serie:", err);
         }
@@ -79,20 +88,18 @@ export default function HomeScreen() {
         genresMap[g.id] = g.name;
       });
 
-const serieEsistenti = new Set(suggestedSeries.map((s) => s.id));
-const serieDisponibili = data.results.filter(
-  (s: any) => !serieEsistenti.has(s.id?.toString())
-);
+      const serieEsistenti = new Set(suggestedSeries.map((s) => s.id));
+      const serieDisponibili = data.results.filter(
+        (s: any) => !serieEsistenti.has(s.id?.toString())
+      );
 
-// Se non ci sono nuove serie disponibili, esci
-if (serieDisponibili.length === 0) {
-  console.warn("Nessuna nuova serie da suggerire");
-  return;
-}
+      if (serieDisponibili.length === 0) {
+        console.warn("Nessuna nuova serie da suggerire");
+        return;
+      }
 
-// Seleziona una serie casuale tra quelle non ancora suggerite
-const randomIndex = Math.floor(Math.random() * serieDisponibili.length);
-const show = serieDisponibili[randomIndex];
+      const randomIndex = Math.floor(Math.random() * serieDisponibili.length);
+      const show = serieDisponibili[randomIndex];
 
       const nuovaSerie: Serie = {
         id: show.id?.toString(),
@@ -120,7 +127,7 @@ const show = serieDisponibili[randomIndex];
           style={styles.addButtonCard}
           onPress={fetchNuovaSerie}
         >
-         <Ionicons name="add-circle" size={50} color="#fff" />
+          <Ionicons name="add-circle" size={50} color="#fff" />
           <Text style={styles.addButtonText}>Scopri nuova serie</Text>
         </TouchableOpacity>
       );
@@ -179,25 +186,37 @@ const show = serieDisponibili[randomIndex];
         </TouchableOpacity>
       </View>
 
-      <Text style={styles.sectionTitle}>Le tue Serie TV In Corso</Text>
-      <FlatList
-        data={serieViste}
-        keyExtractor={(item, index) => item.id || item.titolo + index}
-        horizontal
-        renderItem={renderItem}
-        contentContainerStyle={styles.horizontalList}
-        showsHorizontalScrollIndicator={false}
-      />
+      <ScrollView showsVerticalScrollIndicator={false}>
+        <Text style={styles.sectionTitle}>Le tue Serie TV In Corso</Text>
+        <FlatList
+          data={serieViste}
+          keyExtractor={(item, index) => item.id || item.titolo + index}
+          horizontal
+          renderItem={renderItem}
+          contentContainerStyle={styles.horizontalList}
+          showsHorizontalScrollIndicator={false}
+        />
 
-      <Text style={styles.sectionTitle}>Suggeriti per te</Text>
-      <FlatList
-        data={suggestedSeries}
-        keyExtractor={(item, index) => item.id || index.toString()}
-        horizontal
-        renderItem={renderItem}
-        contentContainerStyle={styles.horizontalList}
-        showsHorizontalScrollIndicator={false}
-      />
+        <Text style={styles.sectionTitle}>Serie Completate</Text>
+        <FlatList
+          data={serieCompletate}
+          keyExtractor={(item, index) => item.id || item.titolo + index}
+          horizontal
+          renderItem={renderItem}
+          contentContainerStyle={styles.horizontalList}
+          showsHorizontalScrollIndicator={false}
+        />
+
+        <Text style={styles.sectionTitle}>Suggeriti per te</Text>
+        <FlatList
+          data={suggestedSeries}
+          keyExtractor={(item, index) => item.id || index.toString()}
+          horizontal
+          renderItem={renderItem}
+          contentContainerStyle={styles.horizontalList}
+          showsHorizontalScrollIndicator={false}
+        />
+      </ScrollView>
     </View>
   );
 }

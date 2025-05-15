@@ -3,6 +3,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect } from "@react-navigation/native";
 import { useRouter } from "expo-router";
 import React, { useCallback, useState } from "react";
+import { Alert } from "react-native";
 
 import {
   Button,
@@ -39,6 +40,16 @@ const CategorieScreen = () => {
   const [tipoCategoria, setTipoCategoria] = useState<"piattaforma" | "genere">(
     "piattaforma"
   );
+  const eliminaCategoria = async (id: string, tipo: "piattaforme" | "generi") => {
+    const nuoveCategorie = {
+      ...categorie,
+      [tipo]: categorie[tipo].filter((item) => item.id !== id),
+    };
+  
+    setCategorie(nuoveCategorie);
+    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(nuoveCategorie));
+  };
+  
   useFocusEffect(
     useCallback(() => {
       const caricaCategorie = async () => {
@@ -129,12 +140,28 @@ const CategorieScreen = () => {
 
         {categorie.piattaforme.map((item) => (
           <Pressable
-            key={item.id}
-            style={styles.riga}
-            onPress={() =>
-              router.push(`/categorie/${encodeURIComponent(item.nome)}`)
-            }
-          >
+          key={item.id}
+          style={styles.riga}
+          onPress={() =>
+            router.push(`/categorie/${encodeURIComponent(item.nome)}`)
+          }
+          onLongPress={() =>
+            // Mostra conferma eliminazione
+            Alert.alert(
+              "Elimina piattaforma",
+              `Sei sicuro di voler eliminare "${item.nome}"?`,
+              [
+                { text: "Annulla", style: "cancel" },
+                {
+                  text: "Elimina",
+                  style: "destructive",
+                  onPress: () => eliminaCategoria(item.id, "piattaforme"),
+                },
+              ]
+            )
+          }
+        >
+        
             <Text style={styles.nome}>{item.nome}</Text>
             <Text style={styles.contatore}>
               ({conteggi.piattaforme[item.nome] || 0} serie)
@@ -156,12 +183,27 @@ const CategorieScreen = () => {
 
         {categorie.generi.map((item) => (
           <Pressable
-            key={item.id}
-            style={styles.riga}
-            onPress={() =>
-              router.push(`/categorie/${encodeURIComponent(item.nome)}`)
-            }
-          >
+          key={item.id}
+          style={styles.riga}
+          onPress={() =>
+            router.push(`/categorie/${encodeURIComponent(item.nome)}`)
+          }
+          onLongPress={() =>
+            Alert.alert(
+              "Elimina genere",
+              `Vuoi eliminare "${item.nome}"?`,
+              [
+                { text: "Annulla", style: "cancel" },
+                {
+                  text: "Elimina",
+                  style: "destructive",
+                  onPress: () => eliminaCategoria(item.id, "generi"),
+                },
+              ]
+            )
+          }
+        >
+        
             <Text style={styles.nome}>{item.nome}</Text>
             <Text style={styles.contatore}>
               ({conteggi.generi[item.nome] || 0} serie)

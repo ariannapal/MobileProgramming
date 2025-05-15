@@ -14,7 +14,7 @@ import {
 } from "react-native";
 import { isFavorite, saveFavorite } from "../utils/favoritesStorage";
 import { Picker } from "@react-native-picker/picker";
-import { Checkbox } from "expo-checkbox";  // Importa il componente Checkbox
+import { Checkbox } from "expo-checkbox";
 
 export default function SerieDettaglioScreen() {
   const [isFav, setIsFav] = useState(false);
@@ -28,7 +28,6 @@ export default function SerieDettaglioScreen() {
     [stagione: string]: { [episodio: number]: boolean };
   }>({});
 
-  // Recupera la serie
   useEffect(() => {
     const fetchSerie = async () => {
       const data = await AsyncStorage.getItem("serie.json");
@@ -39,14 +38,12 @@ export default function SerieDettaglioScreen() {
     fetchSerie();
   }, [id]);
 
-  // Stato preferiti
   useEffect(() => {
     if (serie) {
       isFavorite(serie.id).then((fav) => setIsFav(fav));
     }
   }, [serie]);
 
-  // Carica gli episodi visti
   useEffect(() => {
     const loadEpisodi = async () => {
       if (serie) {
@@ -78,6 +75,28 @@ export default function SerieDettaglioScreen() {
 
     const key = `episodiVisti-${serie.id}`;
     await AsyncStorage.setItem(key, JSON.stringify(updatedData));
+
+    // Verifica se tutte le stagioni sono completate
+    const tutteLeStagioniComplete = serie.stagioniDettagli.every((stagione: any) => {
+      const key = `s${stagione.stagione}`;
+      const visti = updatedData[key] || {};
+      return Object.values(visti).filter(Boolean).length === stagione.episodi;
+    });
+
+    const nuovoStato = tutteLeStagioniComplete ? "Completata" : "In corso";
+
+    if (serie.stato !== nuovoStato) {
+      const data = await AsyncStorage.getItem("serie.json");
+      if (!data) return;
+
+      const lista = JSON.parse(data);
+      const aggiornata = lista.map((s: any) =>
+        String(s.id) === String(serie.id) ? { ...s, stato: nuovoStato } : s
+      );
+
+      await AsyncStorage.setItem("serie.json", JSON.stringify(aggiornata));
+      setSerie((prev: any) => prev && { ...prev, stato: nuovoStato });
+    }
   };
 
   const toggleFavorite = async () => {
@@ -155,7 +174,13 @@ export default function SerieDettaglioScreen() {
         </TouchableOpacity>
       </View>
 
-      <Text style={styles.meta}>⭐ {serie.rating} · {serie.anno}</Text>
+      <Text style={styles.meta}>
+        ⭐ {serie.rating} · {serie.anno} ·{" "}
+        <Text style={{ color: serie.stato === "Completata" ? "lightgreen" : "#aaa" }}>
+          {serie.stato === "Completata" ? "Completata ✅" : "In corso"}
+        </Text>
+      </Text>
+
       <Text style={styles.desc}>{serie.trama ?? "Trama non disponibile."}</Text>
 
       {stagioni.length > 0 && (
@@ -276,12 +301,12 @@ const styles = StyleSheet.create({
   },
   episodioRow: {
     flexDirection: "row",
-    justifyContent: "space-between",  // Sposta il checkbox a destra
+    justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 8,
   },
   checkbox: {
-    marginLeft: 8,  // Per separare il checkbox dal testo
+    marginLeft: 8,
   },
   deleteButton: {
     backgroundColor: "red",

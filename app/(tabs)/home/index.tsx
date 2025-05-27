@@ -28,8 +28,9 @@ export default function HomeScreen() {
   const [serieViste, setSerieViste] = useState<Serie[]>([]);
   const [serieCompletate, setSerieCompletate] = useState<Serie[]>([]);
   const [suggestedSeries, setSuggestedSeries] = useState<Serie[]>([
-    { id: "loadMore", titolo: "Scopri nuova serie" },
+    { id: "loadMore", titolo: "Scopri una nuova serie" },
   ]);
+  const [shimmerVisible, setShimmerVisible] = useState(false);
 
   const router = useRouter();
 
@@ -122,7 +123,7 @@ export default function HomeScreen() {
       setSuggestedSeries((prev) => [
         ...prev.slice(0, -1),
         nuovaSerie,
-        { id: "loadMore", titolo: "Scopri nuova serie" },
+        { id: "loadMore", titolo: "Scopri una nuova serie" },
       ]);
     } catch (err) {
       console.error("❌ Errore TMDb:", err);
@@ -136,8 +137,8 @@ export default function HomeScreen() {
           style={styles.addButtonCard}
           onPress={fetchNuovaSerie}
         >
-          <Ionicons name="add-circle" size={50} color="#fff" />
-          <Text style={styles.addButtonText}>Scopri nuova serie</Text>
+          <Ionicons name="add-circle-outline" size={36} color="#fff" />
+          <Text style={styles.addButtonText}>Scopri una nuova serie</Text>
         </TouchableOpacity>
       );
     }
@@ -289,16 +290,22 @@ const styles = StyleSheet.create({
   addButtonCard: {
     width: 120,
     height: 180,
-    marginRight: 12,
+    backgroundColor: "#1f1f3b",
+    borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: 8,
-    backgroundColor: "#444",
+    padding: 10,
+    marginRight: 10,
+    shadowColor: "#fff",
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 8,
+    elevation: 3,
   },
   addButtonText: {
     marginTop: 8,
-    color: "#fff",
-    fontSize: 14,
+    fontSize: 12,
+    color: "#ccc",
     textAlign: "center",
   },
 });

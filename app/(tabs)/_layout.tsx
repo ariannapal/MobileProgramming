@@ -3,45 +3,51 @@ import { Tabs } from "expo-router";
 
 export default function TabsLayout() {
   return (
-    <Tabs>
+    <Tabs
+      screenOptions={{
+        tabBarActiveTintColor: "purple",
+        tabBarInactiveTintColor: "gray",
+        tabBarStyle: {
+          backgroundColor: "#0f0f2a", // tab bar scura
+          borderTopColor: "#222",
+        },
+        headerStyle: {
+          backgroundColor: "#6a11cb", // header color
+        },
+        headerTintColor: "#fff",
+      }}
+    >
       <Tabs.Screen
         name="home"
         options={{
           title: "Home",
-          headerStyle: {
-            backgroundColor: "#6a11cb", // Colore di sfondo dell'header
-          },
-          headerTintColor: "#fff", // Colore del testo dell'header
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="home" size={size} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
         name="categorie"
         options={{
           title: "Categorie",
-          headerStyle: {
-            backgroundColor: "#6a11cb", // Colore di sfondo dell'header
-          },
-          headerTintColor: "#fff", // Colore del testo dell'header
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="list" size={size} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
         name="statistiche"
         options={{
           title: "Statistiche",
-          headerStyle: {
-            backgroundColor: "#6a11cb", // Colore di sfondo dell'header
-          },
-          headerTintColor: "#fff", // Colore del testo dell'header
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="stats-chart" size={size} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
         name="preferiti"
         options={{
           title: "Preferiti",
-          headerStyle: {
-            backgroundColor: "#6a11cb", // Colore di sfondo dell'header
-          },
-          headerTintColor: "#fff", // Colore del testo dell'header
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="heart" size={size} color={color} />
           ),

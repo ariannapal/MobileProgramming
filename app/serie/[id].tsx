@@ -227,17 +227,21 @@ export default function SerieDettaglioScreen() {
           {serie.stato === "Completata" ? "Completata ✅" : "In corso"}
         </Text>
       </Text>
-      <Text style={styles.sectionTitle}>Il tuo voto</Text>
-      <View style={{ alignItems: "flex-start", marginBottom: 16 }}>
-        <StarRating
-          rating={userRating ?? 0}
-          onChange={setUserRating}
-          starSize={28}
-          color="#ffdd57"
-          enableSwiping={true}
-          style={{ marginBottom: 3 }} // <--- questo aggiunge spazio sotto
-        />
-      </View>
+     {serie?.stato !== 'suggerita' && (
+  <>
+    <Text style={styles.sectionTitle}>Il tuo voto</Text>
+    <View style={{ alignItems: "flex-start", marginBottom: 16 }}>
+      <StarRating
+        rating={userRating ?? 0}
+        onChange={setUserRating}
+        starSize={28}
+        color="#ffdd57"
+        enableSwiping={true}
+        style={{ marginBottom: 3 }}
+      />
+    </View>
+  </>
+)}
 
       <Text style={styles.sectionTitle}>Trama</Text>
       <Text style={styles.desc}>{serie.trama ?? "Trama non disponibile."}</Text>

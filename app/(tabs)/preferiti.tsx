@@ -20,6 +20,7 @@ type FavoriteItem = {
   title?: string;
   image?: string;
   poster_path?: string;
+  userRating?: number;
 };
 
 export default function PreferitiScreen() {
@@ -33,8 +34,19 @@ export default function PreferitiScreen() {
       const loadFavorites = async () => {
         const data = await getFavorites();
         const valid = data.filter((item: any) => item?.id);
+
+        const enriched = await Promise.all(
+          valid.map(async (item) => {
+            const ratingRaw = await AsyncStorage.getItem(
+              `userRating-${item.id}`
+            );
+            const userRating = ratingRaw ? parseFloat(ratingRaw) : null;
+            return { ...item, userRating };
+          })
+        );
+
         if (isActive) {
-          setFavorites(valid);
+          setFavorites(enriched);
         }
       };
 
@@ -70,6 +82,9 @@ export default function PreferitiScreen() {
       <Text style={styles.title} numberOfLines={2}>
         {item.titolo || item.title}
       </Text>
+      {item.userRating !== undefined && (
+        <Text style={styles.rating}>⭐ {item.userRating.toFixed(1)}/5</Text>
+      )}
     </TouchableOpacity>
   );
 
@@ -136,5 +151,10 @@ const styles = StyleSheet.create({
     color: "#aaa",
     textAlign: "center",
     marginTop: 40,
+  },
+  rating: {
+    color: "#ffdd57",
+    fontSize: 13,
+    marginTop: 2,
   },
 });

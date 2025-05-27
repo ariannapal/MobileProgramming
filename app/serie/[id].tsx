@@ -4,6 +4,7 @@ import { Checkbox } from "expo-checkbox";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { Platform } from "react-native";
+import StarRating from "react-native-star-rating-widget";
 import SeasonPicker from "./SeasonPicker"; // adatta il path se necessario
 
 import {
@@ -65,6 +66,19 @@ export default function SerieDettaglioScreen() {
     };
     loadEpisodi();
   }, [serie]);
+  useEffect(() => {
+    const loadRating = async () => {
+      const stored = await AsyncStorage.getItem(`userRating-${serie?.id}`);
+      if (stored) setUserRating(parseFloat(stored));
+    };
+    if (serie) loadRating();
+  }, [serie]);
+
+  useEffect(() => {
+    if (userRating !== null && serie) {
+      AsyncStorage.setItem(`userRating-${serie.id}`, String(userRating));
+    }
+  }, [userRating]);
 
   const toggleEpisodioVisto = async (index: number) => {
     if (!serie || stagioneSelezionata === null) return;
@@ -202,7 +216,7 @@ export default function SerieDettaglioScreen() {
       </View>
 
       <Text style={styles.meta}>
-        ⭐ {serie.rating} · {serie.anno} ·{" "}
+        {serie.anno} ·{" "}
         <Text
           style={{
             color: serie.stato === "Completata" ? "lightgreen" : "#aaa",
@@ -211,7 +225,19 @@ export default function SerieDettaglioScreen() {
           {serie.stato === "Completata" ? "Completata ✅" : "In corso"}
         </Text>
       </Text>
+      <Text style={styles.sectionTitle}>Il tuo voto</Text>
+      <View style={{ alignItems: "flex-start", marginBottom: 16 }}>
+        <StarRating
+          rating={userRating ?? 0}
+          onChange={setUserRating}
+          starSize={28}
+          color="#ffdd57"
+          enableSwiping={true}
+          style={{ marginBottom: 3 }} // <--- questo aggiunge spazio sotto
+        />
+      </View>
 
+      <Text style={styles.sectionTitle}>Trama</Text>
       <Text style={styles.desc}>{serie.trama ?? "Trama non disponibile."}</Text>
 
       {stagioni.length > 0 && (

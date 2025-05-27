@@ -285,7 +285,7 @@ export default function HomeScreen() {
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false}>
-        <Text style={styles.sectionTitle}>Le tue Serie TV In Corso</Text>
+        <Text style={styles.sectionTitle}>Serie TV In Corso</Text>
         <FlatList
           data={serieViste}
           keyExtractor={(item, index) => item.id || item.titolo + index}
@@ -295,7 +295,7 @@ export default function HomeScreen() {
           showsHorizontalScrollIndicator={false}
         />
 
-        <Text style={styles.sectionTitle}>Serie Completate</Text>
+        <Text style={styles.sectionTitle}>Serie TV Completate</Text>
         <FlatList
           data={serieCompletate}
           keyExtractor={(item, index) => item.id || item.titolo + index}

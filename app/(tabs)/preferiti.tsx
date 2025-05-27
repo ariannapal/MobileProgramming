@@ -147,19 +147,6 @@ export default function PreferitiScreen() {
       )}
 
       {/* Pulsante reset */}
-      <TouchableOpacity
-        onPress={clearAllData}
-        style={{
-          marginTop: 20,
-          backgroundColor: "#444",
-          padding: 10,
-          borderRadius: 8,
-        }}
-      >
-        <Text style={{ textAlign: "center", color: "#fff" }}>
-          🧹 Reset AsyncStorage
-        </Text>
-      </TouchableOpacity>
     </SafeAreaView>
   );
 }

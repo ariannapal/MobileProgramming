@@ -255,7 +255,7 @@ export default function SerieDettaglioScreen() {
                 color: serie.stato === "Completata" ? "lightgreen" : "#aaa",
               }}
             >
-              {serie.stato === "Completata" ? "Completata ✅" : "In corso"}
+              {serie.stato === "Completata" ? "Completata" : "In corso"}
             </Text>
           </Text>
           {serie?.stato !== "suggerita" && (

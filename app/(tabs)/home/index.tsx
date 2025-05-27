@@ -300,8 +300,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   addButtonCard: {
-    width: 120,
-    height: 180,
+    width: 140,
+    height: 210,
     backgroundColor: "#1f1f3b",
     borderRadius: 8,
     alignItems: "center",

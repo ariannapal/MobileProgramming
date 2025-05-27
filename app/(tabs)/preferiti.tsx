@@ -12,7 +12,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { clearFavorites, getFavorites } from "../utils/favoritesStorage";
+import { clearFavorites, getFavorites } from "../_utils/favoritesStorage";
 
 // oppure un semplice <View style={styles.header} />
 

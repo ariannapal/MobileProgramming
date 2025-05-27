@@ -5,13 +5,15 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   Alert,
-  Image, Platform, Pressable,
+  Image,
+  Platform,
+  Pressable,
   ScrollView,
   StatusBar,
   StyleSheet,
   Text,
   TouchableOpacity,
-  View
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import StarRating from "react-native-star-rating-widget";
@@ -19,7 +21,7 @@ import {
   isFavorite,
   removeFavorite,
   saveFavorite,
-} from "../utils/favoritesStorage";
+} from "../_utils/favoritesStorage";
 import SeasonPicker from "./SeasonPicker"; // adatta il path se necessario
 
 export default function SerieDettaglioScreen() {
@@ -187,99 +189,105 @@ export default function SerieDettaglioScreen() {
       : {};
 
   return (
-    <View style={{flex:1}}>
-      <StatusBar  translucent backgroundColor="transparent" barStyle="light-content"/>
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#000" }}>
-    <ScrollView style={styles.container}>
-      <Pressable onPress={() => router.back()} style={styles.back}>
-        <Ionicons name="chevron-back" size={24} color="#fff" />
-        <Text style={styles.backText}>Indietro</Text>
-      </Pressable>
-
-      <Image
-        source={{
-          uri: serie.poster_path
-            ? `https://image.tmdb.org/t/p/w342${serie.poster_path}`
-            : "https://via.placeholder.com/342x480?text=No+Image",
-        }}
-        style={styles.poster}
+    <View style={{ flex: 1 }}>
+      <StatusBar
+        translucent
+        backgroundColor="transparent"
+        barStyle="light-content"
       />
+      <SafeAreaView style={{ flex: 1, backgroundColor: "#0f0f2a" }}>
+        <ScrollView style={styles.container}>
+          <Pressable onPress={() => router.back()} style={styles.back}>
+            <Ionicons name="chevron-back" size={24} color="#fff" />
+            <Text style={styles.backText}>Indietro</Text>
+          </Pressable>
 
-      <View style={styles.titleRow}>
-        <Text style={styles.title}>{serie.titolo}</Text>
-        <TouchableOpacity onPress={toggleFavorite}>
-          <Ionicons
-            name={isFav ? "heart" : "heart-outline"}
-            size={24}
-            color="#ff4d6d"
-            style={styles.favoriteIcon}
-          />
-        </TouchableOpacity>
-      </View>
-
-      <Text style={styles.meta}>
-        {serie.anno} ·{" "}
-        <Text
-          style={{
-            color: serie.stato === "Completata" ? "lightgreen" : "#aaa",
-          }}
-        >
-          {serie.stato === "Completata" ? "Completata ✅" : "In corso"}
-        </Text>
-      </Text>
-      <Text style={styles.sectionTitle}>Il tuo voto</Text>
-      <View style={{ alignItems: "flex-start", marginBottom: 16 }}>
-        <StarRating
-          rating={userRating ?? 0}
-          onChange={setUserRating}
-          starSize={28}
-          color="#ffdd57"
-          enableSwiping={true}
-          style={{ marginBottom: 3 }} // <--- questo aggiunge spazio sotto
-        />
-      </View>
-
-      <Text style={styles.sectionTitle}>Trama</Text>
-      <Text style={styles.desc}>{serie.trama ?? "Trama non disponibile."}</Text>
-
-      {stagioni.length > 0 && (
-        <>
-          <SeasonPicker
-            stagioni={stagioni.map((s: any) => s.stagione)}
-            stagioneSelezionata={stagioneSelezionata}
-            onChange={(val) => setStagioneSelezionata(val)}
+          <Image
+            source={{
+              uri: serie.poster_path
+                ? `https://image.tmdb.org/t/p/w342${serie.poster_path}`
+                : "https://via.placeholder.com/342x480?text=No+Image",
+            }}
+            style={styles.poster}
           />
 
-          {stagioneSelezionata !== null && (
-            <View style={styles.episodiContainer}>
-              {[...Array(episodiStagioneCorrente)].map((_, i) => (
-                <TouchableOpacity
-                  key={i}
-                  style={styles.episodioRow}
-                  onPress={() => toggleEpisodioVisto(i)}
-                >
-                  <Text style={styles.episodio}>
-                    S{stagioneSelezionata} E{i + 1}
-                  </Text>
-                  <Checkbox
-                    style={styles.checkbox}
-                    value={!!episodiAttivi[i]}
-                    onValueChange={() => toggleEpisodioVisto(i)}
-                  />
-                </TouchableOpacity>
-              ))}
-            </View>
+          <View style={styles.titleRow}>
+            <Text style={styles.title}>{serie.titolo}</Text>
+            <TouchableOpacity onPress={toggleFavorite}>
+              <Ionicons
+                name={isFav ? "heart" : "heart-outline"}
+                size={24}
+                color="#ff4d6d"
+                style={styles.favoriteIcon}
+              />
+            </TouchableOpacity>
+          </View>
+
+          <Text style={styles.meta}>
+            {serie.anno} ·{" "}
+            <Text
+              style={{
+                color: serie.stato === "Completata" ? "lightgreen" : "#aaa",
+              }}
+            >
+              {serie.stato === "Completata" ? "Completata ✅" : "In corso"}
+            </Text>
+          </Text>
+          <Text style={styles.sectionTitle}>Il tuo voto</Text>
+          <View style={{ alignItems: "flex-start", marginBottom: 16 }}>
+            <StarRating
+              rating={userRating ?? 0}
+              onChange={setUserRating}
+              starSize={28}
+              color="#ffdd57"
+              enableSwiping={true}
+              style={{ marginBottom: 3 }} // <--- questo aggiunge spazio sotto
+            />
+          </View>
+
+          <Text style={styles.sectionTitle}>Trama</Text>
+          <Text style={styles.desc}>
+            {serie.trama ?? "Trama non disponibile."}
+          </Text>
+
+          {stagioni.length > 0 && (
+            <>
+              <SeasonPicker
+                stagioni={stagioni.map((s: any) => s.stagione)}
+                stagioneSelezionata={stagioneSelezionata}
+                onChange={(val) => setStagioneSelezionata(val)}
+              />
+
+              {stagioneSelezionata !== null && (
+                <View style={styles.episodiContainer}>
+                  {[...Array(episodiStagioneCorrente)].map((_, i) => (
+                    <TouchableOpacity
+                      key={i}
+                      style={styles.episodioRow}
+                      onPress={() => toggleEpisodioVisto(i)}
+                    >
+                      <Text style={styles.episodio}>
+                        S{stagioneSelezionata} E{i + 1}
+                      </Text>
+                      <Checkbox
+                        style={styles.checkbox}
+                        value={!!episodiAttivi[i]}
+                        onValueChange={() => toggleEpisodioVisto(i)}
+                      />
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+            </>
           )}
-        </>
-      )}
 
-      <TouchableOpacity onPress={deleteSerie} style={styles.deleteButton}>
-        <Text style={styles.deleteButtonText}>Elimina Serie</Text>
-      </TouchableOpacity>
-    </ScrollView>
-    </SafeAreaView>
+          <TouchableOpacity onPress={deleteSerie} style={styles.deleteButton}>
+            <Text style={styles.deleteButtonText}>Elimina Serie</Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </SafeAreaView>
     </View>
-      );
+  );
 }
 
 const styles = StyleSheet.create({

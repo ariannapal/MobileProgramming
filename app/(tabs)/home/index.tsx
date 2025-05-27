@@ -14,23 +14,34 @@ import {
   View,
 } from "react-native";
 
+type StagioneDettaglio = {
+  stagione: number;
+  episodi: number;
+};
+
 type Serie = {
   id?: string;
   titolo: string;
+  trama?: string;
   genere?: string;
   piattaforma?: string;
+  stato?: string; // "in corso", "completata", "suggerita"
+  stagioni?: string | number;
+  episodi?: string | number;
   poster_path?: string;
   image?: string;
-  stato?: string;
+  rating?: string | number;
+  anno?: string;
+   stagioniDettagli?: StagioneDettaglio[];
 };
+
 
 export default function HomeScreen() {
   const [serieViste, setSerieViste] = useState<Serie[]>([]);
   const [serieCompletate, setSerieCompletate] = useState<Serie[]>([]);
   const [suggestedSeries, setSuggestedSeries] = useState<Serie[]>([
-    { id: "loadMore", titolo: "Scopri una nuova serie" },
+    { id: "loadMore", titolo: "Scopri nuova serie" },
   ]);
-  const [shimmerVisible, setShimmerVisible] = useState(false);
 
   const router = useRouter();
 
@@ -48,9 +59,13 @@ export default function HomeScreen() {
           const serieFatte = data.filter(
             (serie) => serie.stato?.toLowerCase().trim() === "completata"
           );
+            const suggerite = data.filter(
+          (serie) => serie.stato?.toLowerCase().trim() === "suggerita"
+        );
 
           setSerieViste(serieInCorso);
           setSerieCompletate(serieFatte);
+          setSuggestedSeries([...suggerite, { id: "loadMore", titolo: "Scopri nuova serie" }]);
         } catch (err) {
           console.error("Errore nel caricamento delle serie:", err);
         }
@@ -67,68 +82,121 @@ export default function HomeScreen() {
     }
   };
 
-  const fetchNuovaSerie = async () => {
-    try {
-      const [res, genresRes] = await Promise.all([
-        fetch(`https://api.themoviedb.org/3/tv/popular?language=it-IT&page=1`, {
-          headers: {
-            Authorization:
-              "Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiIxYWMxMzU4NjY3ZjcyODgzNWRhZjk2YjAxZDZkODVhMCIsIm5iZiI6MTc0Njc3ODg1MC4zMTcsInN1YiI6IjY4MWRiYWUyM2E2OGExMTcyOTYzYmQxNiIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.I6RbtWrCPo0n0YWNYNfGs0wnAcIrG0n5t4KYh0W7Am4",
-            accept: "application/json",
-          },
-        }),
-        fetch(`https://api.themoviedb.org/3/genre/tv/list?language=it-IT`, {
-          headers: {
-            Authorization:
-              "Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiIxYWMxMzU4NjY3ZjcyODgzNWRhZjk2YjAxZDZkODVhMCIsIm5iZiI6MTc0Njc3ODg1MC4zMTcsInN1YiI6IjY4MWRiYWUyM2E2OGExMTcyOTYzYmQxNiIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.I6RbtWrCPo0n0YWNYNfGs0wnAcIrG0n5t4KYh0W7Am4",
-            accept: "application/json",
-          },
-        }),
-      ]);
-
-      if (!res.ok || !genresRes.ok) {
-        throw new Error("Errore nella fetch TMDb");
+const fetchDettagliSerie = async (id: number) => {
+  try {
+    const res = await fetch(
+      `https://api.themoviedb.org/3/tv/${id}?language=it-IT`,
+      {
+        headers: {
+          Authorization:
+            "Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiIxYWMxMzU4NjY3ZjcyODgzNWRhZjk2YjAxZDZkODVhMCIsIm5iZiI6MTc0Njc3ODg1MC4zMTcsInN1YiI6IjY4MWRiYWUyM2E2OGExMTcyOTYzYmQxNiIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.I6RbtWrCPo0n0YWNYNfGs0wnAcIrG0n5t4KYh0W7Am4",
+          accept: "application/json",
+        },
       }
+    );
 
-      const data = await res.json();
-      const genresData = await genresRes.json();
+    if (!res.ok) throw new Error("Errore nel recupero dettagli serie");
 
-      const genresMap: Record<number, string> = {};
-      genresData.genres.forEach((g: { id: number; name: string }) => {
-        genresMap[g.id] = g.name;
-      });
+    const data = await res.json();
 
-      const serieEsistenti = new Set(suggestedSeries.map((s) => s.id));
-      const serieDisponibili = data.results.filter(
-        (s: any) => !serieEsistenti.has(s.id?.toString())
-      );
+    // Mappa ogni stagione con numero e conteggio episodi
+    const episodiPerStagione = data.seasons.map((s: any) => ({
+      stagione: s.season_number,
+      episodi: s.episode_count,
+    }));
 
-      if (serieDisponibili.length === 0) {
-        console.warn("Nessuna nuova serie da suggerire");
-        return;
+    return {
+      numeroStagioni: data.number_of_seasons,
+      numeroEpisodiTotale: data.number_of_episodes,
+      episodiPerStagione,
+      dettagliRaw: data,
+    };
+  } catch (err) {
+    console.error("Errore dettagli serie:", err);
+    return null;
+  }
+};
+
+const fetchNuovaSerie = async () => {
+  try {
+    // Fetch serie top rated
+    const res = await fetch(
+      `https://api.themoviedb.org/3/tv/top_rated?language=it-IT&page=1`,
+      {
+        headers: {
+          Authorization:
+            "Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiIxYWMxMzU4NjY3ZjcyODgzNWRhZjk2YjAxZDZkODVhMCIsIm5iZiI6MTc0Njc3ODg1MC4zMTcsInN1YiI6IjY4MWRiYWUyM2E2OGExMTcyOTYzYmQxNiIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.I6RbtWrCPo0n0YWNYNfGs0wnAcIrG0n5t4KYh0W7Am4",
+          accept: "application/json",
+        },
       }
+    );
 
-      const randomIndex = Math.floor(Math.random() * serieDisponibili.length);
-      const show = serieDisponibili[randomIndex];
+    if (!res.ok) throw new Error("Errore fetch top rated");
 
-      const nuovaSerie: Serie = {
-        id: show.id?.toString(),
-        titolo: show.name,
-        poster_path: show.poster_path,
-        genere:
-          show.genre_ids?.length > 0 ? genresMap[show.genre_ids[0]] : undefined,
-        piattaforma: "TMDb",
-      };
+    const data = await res.json();
 
-      setSuggestedSeries((prev) => [
-        ...prev.slice(0, -1),
-        nuovaSerie,
-        { id: "loadMore", titolo: "Scopri una nuova serie" },
-      ]);
-    } catch (err) {
-      console.error("❌ Errore TMDb:", err);
+    // Evitiamo duplicati
+    const serieEsistenti = new Set(suggestedSeries.map((s) => s.id));
+    const serieDisponibili = data.results.filter(
+      (s: any) => !serieEsistenti.has(s.id?.toString())
+    );
+
+    if (serieDisponibili.length === 0) {
+      console.warn("Nessuna nuova serie da suggerire");
+      return;
     }
-  };
+
+    const randomIndex = Math.floor(Math.random() * serieDisponibili.length);
+    const show = serieDisponibili[randomIndex];
+
+    // Ottieni dettagli completi con episodiPerStagione ecc.
+    const dettagli = await fetchDettagliSerie(show.id);
+
+    if (!dettagli) {
+      throw new Error("Errore nel recupero dettagli serie");
+    }
+
+
+    
+    const nuovaSerie: Serie = {
+      id: dettagli.dettagliRaw.id?.toString(),
+      titolo: dettagli.dettagliRaw.name,
+      trama: dettagli.dettagliRaw.overview,
+      genere: dettagli.dettagliRaw.genres?.[0]?.name || "",
+      piattaforma: "TMDb",
+      stato: "suggerita",
+      stagioni: dettagli.numeroStagioni,
+      episodi: dettagli.numeroEpisodiTotale,
+      poster_path: dettagli.dettagliRaw.poster_path,
+      rating: dettagli.dettagliRaw.vote_average?.toFixed(1) || "",
+      anno: dettagli.dettagliRaw.first_air_date?.substring(0, 4) || "",
+      stagioniDettagli: dettagli.episodiPerStagione,
+    };
+    
+
+    // Leggi esistente da AsyncStorage
+    const existingData = await AsyncStorage.getItem("serie.json");
+    const lista: Serie[] = existingData ? JSON.parse(existingData) : [];
+
+    // Controllo duplicati anche qui, per sicurezza
+    if (!lista.some((s) => s.id === nuovaSerie.id)) {
+      const aggiornata = [...lista, nuovaSerie];
+      await AsyncStorage.setItem("serie.json", JSON.stringify(aggiornata));
+    }
+
+    // Aggiorna stato locale
+    setSuggestedSeries((prev) => [
+      ...prev.filter((item) => item.id !== "loadMore"),
+      nuovaSerie,
+      { id: "loadMore", titolo: "Scopri nuova serie" },
+    ]);
+  } catch (err) {
+    console.error("❌ Errore fetch nuova serie:", err);
+  }
+};
+
+
+
 
   const renderItem = ({ item }: { item: Serie }) => {
     if (item.id === "loadMore") {
@@ -137,8 +205,8 @@ export default function HomeScreen() {
           style={styles.addButtonCard}
           onPress={fetchNuovaSerie}
         >
-          <Ionicons name="add-circle-outline" size={36} color="#fff" />
-          <Text style={styles.addButtonText}>Scopri una nuova serie</Text>
+          <Ionicons name="add-circle" size={50} color="#fff" />
+          <Text style={styles.addButtonText}>Scopri nuova serie</Text>
         </TouchableOpacity>
       );
     }
@@ -188,15 +256,14 @@ export default function HomeScreen() {
           style={styles.searchInput}
           onPress={() => router.push("/cerca")}
         >
-          <Ionicons name="search-outline" size={18} color="#aaa" />
-          <Text style={styles.searchInputText}>Cerca tra le serie</Text>
+          <Text style={{ color: "#aaa" }}>Cerca tra le serie </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.addButton}
           onPress={() => router.push("/aggiungi")}
         >
-          <Ionicons name="add" size={20} color="white" />
+          <Ionicons name="add" size={26} color="white" />
         </TouchableOpacity>
       </View>
 
@@ -238,86 +305,69 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingTop: 30, // ↓ prima era 60
+    paddingTop: 60,
     paddingHorizontal: 16,
     backgroundColor: "#0f0f2a",
   },
   searchRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 8,
+    marginBottom: 16,
   },
   searchInput: {
     flex: 1,
-    height: 44,
-    flexDirection: "row",
-    alignItems: "center",
+    height: 40,
+    justifyContent: "center",
     backgroundColor: "#1f1f3a",
-    borderRadius: 12,
+    borderRadius: 8,
     paddingHorizontal: 12,
   },
-  searchInputText: {
-    color: "#aaa",
-    fontSize: 14,
-    marginLeft: 6,
-  },
   addButton: {
-    marginLeft: 8,
-    backgroundColor: "#6c2bd9",
-    padding: 10,
-    borderRadius: 12,
+    marginLeft: 10,
+    backgroundColor: "purple",
+    padding: 12,
+    borderRadius: 50,
   },
   sectionTitle: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: "bold",
-    marginTop: 26,
-    marginBottom: 12,
-    paddingLeft: 8,
+    marginTop: 20,
+    marginBottom: 10,
     color: "#fff",
   },
   horizontalList: {
     paddingVertical: 10,
-    paddingLeft: 16,
-    paddingRight: 4,
   },
   card: {
-    width: 140,
-    marginRight: 14,
+    width: 120,
+    marginRight: 12,
     alignItems: "center",
   },
   image: {
-    width: 140,
-    height: 210,
-    borderRadius: 10,
-    marginBottom: 8,
-    backgroundColor: "#1f1f3a",
+    width: 120,
+    height: 180,
+    borderRadius: 8,
+    marginBottom: 6,
+    backgroundColor: "#ccc",
   },
   title: {
-    fontSize: 14,
-    fontWeight: "500",
+    fontSize: 13,
     textAlign: "center",
     color: "#fff",
-    paddingHorizontal: 4,
   },
   addButtonCard: {
     width: 120,
     height: 180,
-    backgroundColor: "#1f1f3b",
-    borderRadius: 8,
+    marginRight: 12,
     alignItems: "center",
     justifyContent: "center",
-    padding: 10,
-    marginRight: 10,
-    shadowColor: "#fff",
-    shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 8,
-    elevation: 3,
+    borderRadius: 8,
+    backgroundColor: "#444",
   },
   addButtonText: {
     marginTop: 8,
-    fontSize: 12,
-    color: "#ccc",
+    color: "#fff",
+    fontSize: 14,
     textAlign: "center",
   },
 });

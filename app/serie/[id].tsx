@@ -242,7 +242,29 @@ export default function SerieDettaglioScreen() {
       <Text style={styles.sectionTitle}>Trama</Text>
       <Text style={styles.desc}>{serie.trama ?? "Trama non disponibile."}</Text>
 
-      {stagioni.length > 0 && (
+{serie.stato === "suggerita" && (
+  <TouchableOpacity
+    style={styles.startButton}
+    onPress={async () => {
+      const data = await AsyncStorage.getItem("serie.json");
+      if (!data) return;
+
+      const lista = JSON.parse(data);
+      const aggiornata = lista.map((s: any) =>
+        String(s.id) === String(serie.id)
+          ? { ...s, stato: "In corso" }
+          : s
+      );
+
+      await AsyncStorage.setItem("serie.json", JSON.stringify(aggiornata));
+      setSerie((prev: any) => prev && { ...prev, stato: "In corso" });
+    }}
+  >
+    <Text style={styles.startButtonText}>Inizia a guardare</Text>
+  </TouchableOpacity>
+)}
+
+      {stagioni.length > 0 && serie.stato !== "suggerita" && (
         <>
           <SeasonPicker
             stagioni={stagioni.map((s: any) => s.stagione)}
@@ -388,4 +410,17 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
+  startButton: {
+  backgroundColor: "#4CAF50",
+  padding: 12,
+  borderRadius: 10,
+  marginTop: 10,
+  alignItems: "center",
+},
+startButtonText: {
+  color: "#fff",
+  fontWeight: "bold",
+  fontSize: 16,
+},
+
 });

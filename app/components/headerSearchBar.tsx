@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import React from "react";
 import { Text, TextInput, TouchableOpacity, View } from "react-native";
 
 type HeaderSearchBarProps = {
@@ -27,10 +28,13 @@ export default function HeaderSearchBar({
         <TouchableOpacity onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </TouchableOpacity>
+
         <Text style={{ color: "#fff", fontSize: 18, fontWeight: "600" }}>
           Search
         </Text>
-        <View style={{ width: 24 }} /> {/* Spazio di simmetria */}
+
+        {/* Spazio di simmetria */}
+        <View style={{ width: 24 }} />
       </View>
 
       <View
@@ -50,6 +54,7 @@ export default function HeaderSearchBar({
           color="#888"
           style={{ marginRight: 6 }}
         />
+
         <TextInput
           placeholder="Cerca una Serie..."
           placeholderTextColor="#888"
@@ -60,6 +65,8 @@ export default function HeaderSearchBar({
             paddingVertical: 10,
             color: "#fff",
           }}
+          keyboardAppearance="dark"
+          returnKeyType="search"
         />
       </View>
     </View>

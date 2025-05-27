@@ -16,6 +16,7 @@ type Serie = {
   id?: string;
   titolo: string;
   rating?: number;
+  userRating?: number;
   anno?: number;
   genere?: string;
   piattaforma?: string;
@@ -39,17 +40,30 @@ export default function CategoriaScreen() {
           (s) => s.genere === nome || s.piattaforma === nome
         );
 
-        setSerieFiltrate(filtrate);
+        // Recupera i rating da AsyncStorage
+        const arricchite = await Promise.all(
+          filtrate.map(async (serie) => {
+            const storedRating = await AsyncStorage.getItem(
+              `userRating-${serie.id}`
+            );
+            return {
+              ...serie,
+              userRating: storedRating ? parseFloat(storedRating) : undefined,
+            };
+          })
+        );
+
+        setSerieFiltrate(arricchite);
       };
 
       caricaSerie();
     }, [nome])
   );
 
-  const renderStars = (rating?: number) => {
-    if (!rating) return null;
+  const renderStars = (userRating?: number) => {
+    if (!userRating) return null;
 
-    const fullStars = Math.round(rating / 2); // 8.1 -> 4
+    const fullStars = Math.round(userRating);
     const stars = [];
 
     for (let i = 0; i < 5; i++) {
@@ -94,7 +108,8 @@ export default function CategoriaScreen() {
               <Text numberOfLines={1} style={styles.titolo}>
                 {item.titolo}
               </Text>
-              {renderStars(item.rating)}
+              {renderStars(item.userRating)}
+
               <Text style={styles.sotto}>{item.anno || "-"}</Text>
             </Pressable>
           )}

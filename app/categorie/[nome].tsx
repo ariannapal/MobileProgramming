@@ -1,3 +1,4 @@
+import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect } from "@react-navigation/native";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -80,7 +81,12 @@ export default function CategoriaScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.container}>
-        <Text style={styles.header}>Serie in: {nome}</Text>
+        <View style={styles.headerRow}>
+          <Pressable onPress={() => router.back()}>
+            <Ionicons name="chevron-back" size={26} color="#fff" />
+          </Pressable>
+          <Text style={styles.header}>Serie in: {nome}</Text>
+        </View>
 
         <FlatList
           data={serieFiltrate}
@@ -137,7 +143,6 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: "bold",
     color: "#fff",
-    marginBottom: 16,
   },
   grid: {
     gap: 8,
@@ -162,5 +167,17 @@ const styles = StyleSheet.create({
   sotto: {
     color: "#bbb",
     fontSize: 11,
+  },
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 16,
+    gap: 8,
+  },
+
+  backArrow: {
+    color: "#fff",
+    fontSize: 22,
+    marginRight: 8,
   },
 });

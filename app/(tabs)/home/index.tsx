@@ -252,14 +252,15 @@ export default function HomeScreen() {
           style={styles.searchInput}
           onPress={() => router.push("/cerca")}
         >
-          <Text style={{ color: "#aaa" }}>Cerca tra le serie </Text>
+          <Ionicons name="search-outline" size={18} color="#aaa" />
+          <Text style={styles.searchInputText}>Cerca tra le serie</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.addButton}
           onPress={() => router.push("/aggiungi")}
         >
-          <Ionicons name="add" size={26} color="white" />
+          <Ionicons name="add" size={20} color="white" />
         </TouchableOpacity>
       </View>
 
@@ -299,72 +300,88 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
+  horizontalList: {
+    paddingVertical: 10,
+    paddingLeft: 16,
+    paddingRight: 4,
+  },
+  card: {
+    width: 140,
+    marginRight: 14,
+    alignItems: "center",
+  },
+  image: {
+    width: 140,
+    height: 210,
+    borderRadius: 10,
+    marginBottom: 8,
+    backgroundColor: "#1f1f3a",
+  },
+  title: {
+    fontSize: 14,
+    fontWeight: "500",
+    textAlign: "center",
+    color: "#fff",
+    paddingHorizontal: 4,
+  },
+  addButtonCard: {
+    width: 140,
+    height: 210,
+    backgroundColor: "#29294d",
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 14,
+    shadowColor: "#000",
+    shadowOpacity: 0.2,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 10,
+    elevation: 4,
+  },
+  addButtonText: {
+    marginTop: 10,
+    fontSize: 13,
+    color: "#aaa",
+    textAlign: "center",
+  },
+  sectionTitle: {
+    fontSize: 22,
+    fontWeight: "bold",
+    marginTop: 26,
+    marginBottom: 12,
+    paddingLeft: 8,
+    color: "#fff",
+  },
+
   container: {
     flex: 1,
-    paddingTop: 60,
+    paddingTop: 30,
     paddingHorizontal: 16,
     backgroundColor: "#0f0f2a",
   },
   searchRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 16,
+    marginBottom: 8,
   },
   searchInput: {
     flex: 1,
-    height: 40,
-    justifyContent: "center",
+    height: 44,
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: "#1f1f3a",
-    borderRadius: 8,
+    borderRadius: 12,
     paddingHorizontal: 12,
   },
-  addButton: {
-    marginLeft: 10,
-    backgroundColor: "purple",
-    padding: 12,
-    borderRadius: 50,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    marginTop: 20,
-    marginBottom: 10,
-    color: "#fff",
-  },
-  horizontalList: {
-    paddingVertical: 10,
-  },
-  card: {
-    width: 120,
-    marginRight: 12,
-    alignItems: "center",
-  },
-  image: {
-    width: 120,
-    height: 180,
-    borderRadius: 8,
-    marginBottom: 6,
-    backgroundColor: "#ccc",
-  },
-  title: {
-    fontSize: 13,
-    textAlign: "center",
-    color: "#fff",
-  },
-  addButtonCard: {
-    width: 140,
-    height: 210,
-    backgroundColor: "#1f1f3b",
-    borderRadius: 8,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 8,
-    backgroundColor: "#444",
-  },
-  addButtonText: {
-    marginTop: 8,
-    color: "#fff",
+  searchInputText: {
+    color: "#aaa",
     fontSize: 14,
-    textAlign: "center",
+    marginLeft: 6,
+  },
+  addButton: {
+    marginLeft: 8,
+    backgroundColor: "#6c2bd9",
+    padding: 10,
+    borderRadius: 12,
   },
 });

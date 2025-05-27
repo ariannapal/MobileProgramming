@@ -3,25 +3,23 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Checkbox } from "expo-checkbox";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
-import { Platform } from "react-native";
-import StarRating from "react-native-star-rating-widget";
-import SeasonPicker from "./SeasonPicker"; // adatta il path se necessario
-
 import {
   Alert,
-  Image,
-  Pressable,
+  Image, Platform, Pressable,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import StarRating from "react-native-star-rating-widget";
 import {
   isFavorite,
   removeFavorite,
   saveFavorite,
 } from "../utils/favoritesStorage";
+import SeasonPicker from "./SeasonPicker"; // adatta il path se necessario
 
 export default function SerieDettaglioScreen() {
   const [isFav, setIsFav] = useState(false);
@@ -188,6 +186,7 @@ export default function SerieDettaglioScreen() {
       : {};
 
   return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#000" }}>
     <ScrollView style={styles.container}>
       <Pressable onPress={() => router.back()} style={styles.back}>
         <Ionicons name="chevron-back" size={24} color="#fff" />
@@ -275,7 +274,8 @@ export default function SerieDettaglioScreen() {
         <Text style={styles.deleteButtonText}>Elimina Serie</Text>
       </TouchableOpacity>
     </ScrollView>
-  );
+    </SafeAreaView>
+      );
 }
 
 const styles = StyleSheet.create({

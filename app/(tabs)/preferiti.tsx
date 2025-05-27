@@ -105,25 +105,29 @@ export default function PreferitiScreen() {
     return <View style={{ flexDirection: "row", gap: 2 }}>{stars}</View>;
   };
 
-  const renderItem = ({ item }: { item: FavoriteItem }) => (
-    <TouchableOpacity
-      style={styles.card}
-      onPress={() => router.push(`/serie/${item.id}`)}
-    >
-      <Image
-        source={{
-          uri: item.poster_path
-            ? `https://image.tmdb.org/t/p/w185/${item.poster_path}`
-            : item.image || "https://via.placeholder.com/120x180?text=?",
-        }}
-        style={styles.image}
-      />
-      <Text style={styles.title} numberOfLines={2}>
-        {item.titolo || item.title}
-      </Text>
-      {renderStars(item.userRating)}
-    </TouchableOpacity>
-  );
+  const renderItem = ({ item }: { item: FavoriteItem }) => {
+    const imageUri = (() => {
+      if (!item.poster_path)
+        return item.image || "https://via.placeholder.com/120x180?text=?";
+      if (item.poster_path.startsWith("file://")) return item.poster_path; // immagine locale
+      if (item.poster_path.startsWith("/"))
+        return `https://image.tmdb.org/t/p/w185${item.poster_path}`; // TMDb
+      return item.poster_path; // URL completo o altro
+    })();
+
+    return (
+      <TouchableOpacity
+        style={styles.card}
+        onPress={() => router.push(`/serie/${item.id}`)}
+      >
+        <Image source={{ uri: imageUri }} style={styles.image} />
+        <Text style={styles.title} numberOfLines={2}>
+          {item.titolo || item.title}
+        </Text>
+        {renderStars(item.userRating)}
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <SafeAreaView style={styles.safe}>

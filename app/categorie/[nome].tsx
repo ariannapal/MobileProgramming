@@ -104,13 +104,22 @@ export default function CategoriaScreen() {
             >
               <Image
                 source={{
-                  uri: item.poster_path
-                    ? `https://image.tmdb.org/t/p/w185/${item.poster_path}`
-                    : item.poster ||
-                      "https://via.placeholder.com/100x150?text=?",
+                  uri: (() => {
+                    if (!item.poster_path)
+                      return (
+                        item.poster ||
+                        "https://via.placeholder.com/100x150?text=?"
+                      );
+                    if (item.poster_path.startsWith("file://"))
+                      return item.poster_path; // immagine locale
+                    if (item.poster_path.startsWith("/"))
+                      return `https://image.tmdb.org/t/p/w185${item.poster_path}`; // TMDb
+                    return item.poster_path; // url completo o altro
+                  })(),
                 }}
                 style={styles.poster}
               />
+
               <Text numberOfLines={1} style={styles.titolo}>
                 {item.titolo}
               </Text>

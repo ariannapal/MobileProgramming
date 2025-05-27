@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Checkbox } from "expo-checkbox";
+import * as FileSystem from "expo-file-system";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
@@ -25,6 +26,7 @@ import {
 import SeasonPicker from "./SeasonPicker"; // adatta il path se necessario
 
 export default function SerieDettaglioScreen() {
+  const [imageBase64, setImageBase64] = useState<string | null>(null);
   const [isFav, setIsFav] = useState(false);
   const { id } = useLocalSearchParams();
   const idString = Array.isArray(id) ? id[0] : id;
@@ -38,6 +40,21 @@ export default function SerieDettaglioScreen() {
   const [episodiVistiData, setEpisodiVistiData] = useState<{
     [stagione: string]: { [episodio: number]: boolean };
   }>({});
+  useEffect(() => {
+    const loadBase64 = async () => {
+      if (serie?.poster_path?.startsWith("file://")) {
+        try {
+          const base64 = await FileSystem.readAsStringAsync(serie.poster_path, {
+            encoding: FileSystem.EncodingType.Base64,
+          });
+          setImageBase64(`data:image/png;base64,${base64}`);
+        } catch (e) {
+          console.error("Errore caricamento base64:", e);
+        }
+      }
+    };
+    loadBase64();
+  }, [serie]);
 
   useEffect(() => {
     const fetchSerie = async () => {
@@ -187,6 +204,18 @@ export default function SerieDettaglioScreen() {
     stagioneSelezionata !== null
       ? episodiVistiData[`s${stagioneSelezionata}`] || {}
       : {};
+  console.log("serie.poster_path", serie.poster_path);
+  const imageUri = (() => {
+    if (!serie.poster_path)
+      return "https://via.placeholder.com/342x480?text=No+Image";
+    if (serie.poster_path.startsWith("file://"))
+      return `${serie.poster_path}?timestamp=${Date.now()}`; // forzo reload cache
+    if (serie.poster_path.startsWith("/"))
+      return `https://image.tmdb.org/t/p/w342${serie.poster_path}`;
+    return serie.poster_path;
+  })();
+
+  console.log("Visualizzo immagine con URI:", imageUri);
 
   return (
     <View style={{ flex: 1 }}>
@@ -203,11 +232,7 @@ export default function SerieDettaglioScreen() {
           </Pressable>
 
           <Image
-            source={{
-              uri: serie.poster_path
-                ? `https://image.tmdb.org/t/p/w342${serie.poster_path}`
-                : "https://via.placeholder.com/342x480?text=No+Image",
-            }}
+            source={{ uri: imageBase64 || imageUri }}
             style={styles.poster}
           />
 
@@ -216,7 +241,7 @@ export default function SerieDettaglioScreen() {
             <TouchableOpacity onPress={toggleFavorite}>
               <Ionicons
                 name={isFav ? "heart" : "heart-outline"}
-                size={24}
+                size={30}
                 color="#ff4d6d"
                 style={styles.favoriteIcon}
               />

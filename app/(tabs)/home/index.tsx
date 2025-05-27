@@ -43,6 +43,25 @@ export default function HomeScreen() {
   ]);
 
   const router = useRouter();
+  function getImageUri(item: { poster_path?: string; image?: string }) {
+    if (!item.poster_path && !item.image) {
+      return "https://via.placeholder.com/120x180?text=?";
+    }
+
+    if (item.poster_path) {
+      if (item.poster_path.startsWith("file://")) {
+        return item.poster_path;
+      }
+      if (item.poster_path.startsWith("/")) {
+        return `https://image.tmdb.org/t/p/w185${item.poster_path}`;
+      }
+      if (item.poster_path.startsWith("http")) {
+        return item.poster_path;
+      }
+    }
+
+    return item.image || "https://via.placeholder.com/120x180?text=?";
+  }
 
   useFocusEffect(
     useCallback(() => {
@@ -190,7 +209,7 @@ export default function HomeScreen() {
         { id: "loadMore", titolo: "Scopri nuova serie" },
       ]);
     } catch (err) {
-      console.error("❌ Errore fetch nuova serie:", err);
+      console.error("Errore fetch nuova serie:", err);
     }
   };
 
@@ -206,6 +225,18 @@ export default function HomeScreen() {
         </TouchableOpacity>
       );
     }
+
+    const imageUri = (() => {
+      if (!item.poster_path && !item.image)
+        return "https://via.placeholder.com/120x180?text=?";
+      if (item.poster_path) {
+        if (item.poster_path.startsWith("file://")) return item.poster_path;
+        if (item.poster_path.startsWith("/"))
+          return `https://image.tmdb.org/t/p/w185${item.poster_path}`;
+        if (item.poster_path.startsWith("http")) return item.poster_path;
+      }
+      return item.image || "https://via.placeholder.com/120x180?text=?";
+    })();
 
     return (
       <TouchableOpacity
@@ -226,18 +257,7 @@ export default function HomeScreen() {
           router.push(`/serie/${encodeURIComponent(item.id || item.titolo)}`);
         }}
       >
-        {item.poster_path || item.image ? (
-          <Image
-            source={{
-              uri: item.poster_path?.startsWith("/")
-                ? `https://image.tmdb.org/t/p/w185${item.poster_path}`
-                : item.image || "https://via.placeholder.com/120x180?text=?",
-            }}
-            style={styles.image}
-          />
-        ) : (
-          <View style={styles.image} />
-        )}
+        <Image source={{ uri: imageUri }} style={styles.image} />
         <Text style={styles.title} numberOfLines={2}>
           {item.titolo}
         </Text>

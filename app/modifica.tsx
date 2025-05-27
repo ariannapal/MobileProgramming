@@ -1,7 +1,10 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as FileSystem from "expo-file-system";
+import * as ImagePicker from "expo-image-picker";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
+  Image,
   KeyboardAvoidingView,
   Platform,
   SafeAreaView,
@@ -14,12 +17,49 @@ import {
 } from "react-native";
 
 export default function ModificaScreen() {
+  const [localPosterUri, setLocalPosterUri] = useState<string | null>(null);
+
   const router = useRouter();
   const params = useLocalSearchParams();
   const [categorieGeneri, setCategorieGeneri] = useState<string[]>([]);
   const [categoriePiattaforme, setCategoriePiattaforme] = useState<string[]>(
     []
   );
+  const copiaImmagineLocale = async (uri: string) => {
+    const filename = uri.split("/").pop();
+    if (!FileSystem.documentDirectory) {
+      throw new Error("documentDirectory non disponibile");
+    }
+    const dest = FileSystem.documentDirectory + filename;
+    try {
+      await FileSystem.copyAsync({ from: uri, to: dest });
+      return dest; // percorso permanente
+    } catch (e) {
+      console.error("Errore copia file", e);
+      return uri; // fallback
+    }
+  };
+  const pickImage = async () => {
+    const permissionResult =
+      await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permissionResult.granted) {
+      alert("Permesso negato alla galleria");
+      return;
+    }
+    const pickerResult = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 1,
+    });
+
+    if (
+      !pickerResult.canceled &&
+      pickerResult.assets &&
+      pickerResult.assets.length > 0
+    ) {
+      // Salva l'uri della prima immagine selezionata
+      setLocalPosterUri(pickerResult.assets[0].uri);
+    }
+  };
 
   const [form, setForm] = useState({
     titolo: params.titolo as string,
@@ -29,7 +69,9 @@ export default function ModificaScreen() {
     stato: "In corso",
     stagioni: "",
     episodi: "",
-    poster_path: params.poster_path as string,
+    poster_path: params.poster_path
+      ? `https://image.tmdb.org/t/p/w500${params.poster_path}`
+      : "",
     rating: params.rating as string,
     anno: params.anno as string,
   });
@@ -77,7 +119,7 @@ export default function ModificaScreen() {
           const generi = parsed.generi.map((g: any) => g.nome);
           const piattaforme = parsed.piattaforme.map((p: any) => p.nome);
 
-          // ✅ se il genere del form non è presente, lo aggiungo temporaneamente
+          // se il genere del form non è presente, lo aggiungo temporaneamente
           if (form.genere && !generi.includes(form.genere)) {
             generi.push(form.genere);
           }
@@ -101,10 +143,15 @@ export default function ModificaScreen() {
   };
 
   const salvaSerieNelJson = async () => {
+    let percorsoFinalePoster = form.poster_path;
+    if (localPosterUri) {
+      percorsoFinalePoster = await copiaImmagineLocale(localPosterUri);
+    }
     try {
       const nuovaSerie = {
         id: Date.now().toString(),
         ...form,
+        poster_path: percorsoFinalePoster,
         stagioniDettagli: stagioniDettagli,
       };
       // Salva categorie nuove (genere e piattaforma)
@@ -183,6 +230,38 @@ export default function ModificaScreen() {
             value={form.titolo}
             onChangeText={(v) => aggiornaCampo("titolo", v)}
           />
+          <TouchableOpacity
+            onPress={pickImage}
+            style={{ marginVertical: 20, alignItems: "center" }}
+          >
+            {localPosterUri ? (
+              <Image
+                source={{ uri: localPosterUri }}
+                style={{ width: 150, height: 225, borderRadius: 12 }}
+              />
+            ) : form.poster_path ? (
+              <Image
+                source={{ uri: form.poster_path }}
+                style={{ width: 150, height: 225, borderRadius: 12 }}
+              />
+            ) : (
+              <View
+                style={{
+                  width: 150,
+                  height: 225,
+                  backgroundColor: "#333",
+                  borderRadius: 12,
+                  justifyContent: "center",
+                  alignItems: "center",
+                }}
+              >
+                <Text style={{ color: "#fff" }}>Nessuna immagine</Text>
+              </View>
+            )}
+            <Text style={{ color: "purple", marginTop: 8 }}>
+              Cambia immagine
+            </Text>
+          </TouchableOpacity>
 
           <TextInput
             style={styles.tramaInput}

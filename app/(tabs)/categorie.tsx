@@ -102,30 +102,34 @@ const CategorieScreen = () => {
   const aggiungiCategoria = async () => {
     const nomePulito = nomeCategoria.trim().toLowerCase();
     if (!nomePulito) return;
-  
+
     const listaEsistente =
       tipoCategoria === "piattaforma"
         ? categorie.piattaforme
         : categorie.generi;
-  
+
     const esisteGia = listaEsistente.some(
       (cat) => cat.nome.trim().toLowerCase() === nomePulito
     );
-  
+
     if (esisteGia) {
       Alert.alert(
         "Categoria esistente",
-        `Esiste già una ${tipoCategoria === "piattaforma" ? "piattaforma" : "categoria di genere"} con questo nome.`
+        `Esiste già una ${
+          tipoCategoria === "piattaforma"
+            ? "piattaforma"
+            : "categoria di genere"
+        } con questo nome.`
       );
       return;
     }
-  
+
     const nuovaCategoria = {
       id: Date.now().toString(),
       nome: nomeCategoria.trim(),
       count: 0,
     };
-  
+
     const nuovoStato = {
       ...categorie,
       [tipoCategoria === "piattaforma" ? "piattaforme" : "generi"]: [
@@ -133,15 +137,14 @@ const CategorieScreen = () => {
         nuovaCategoria,
       ],
     };
-  
+
     setCategorie(nuovoStato);
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(nuovoStato));
-  
+
     setNomeCategoria("");
     setTipoCategoria("piattaforma");
     setModalVisible(false);
   };
-  
 
   return (
     <SafeAreaView style={styles.container}>
@@ -258,17 +261,6 @@ const CategorieScreen = () => {
             </View>
           </View>
         </Modal>
-        <Button
-          title="🔄 Reset categorie"
-          onPress={async () => {
-            await AsyncStorage.setItem(
-              STORAGE_KEY,
-              JSON.stringify(categorieJson)
-            );
-            setCategorie(categorieJson);
-            Alert.alert("Reset", "Categorie ripristinate ai valori iniziali");
-          }}
-        />
       </ScrollView>
     </SafeAreaView>
   );
@@ -284,7 +276,7 @@ const styles = StyleSheet.create({
   },
   scrollContainer: {
     padding: 16,
-    paddingBottom: 80,
+    paddingBottom: 20,
   },
   header: {
     fontWeight: "bold",

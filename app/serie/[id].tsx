@@ -7,6 +7,7 @@ import {
   Alert,
   Image, Platform, Pressable,
   ScrollView,
+  StatusBar,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -186,6 +187,8 @@ export default function SerieDettaglioScreen() {
       : {};
 
   return (
+    <View style={{flex:1}}>
+      <StatusBar  translucent backgroundColor="transparent" barStyle="light-content"/>
     <SafeAreaView style={{ flex: 1, backgroundColor: "#000" }}>
     <ScrollView style={styles.container}>
       <Pressable onPress={() => router.back()} style={styles.back}>
@@ -275,6 +278,7 @@ export default function SerieDettaglioScreen() {
       </TouchableOpacity>
     </ScrollView>
     </SafeAreaView>
+    </View>
       );
 }
 

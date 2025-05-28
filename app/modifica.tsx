@@ -124,11 +124,12 @@ export default function ModificaScreen() {
   const [stagioniDettagli, setStagioniDettagli] = useState<
     { stagione: number; episodi: number }[]
   >([{ stagione: 1, episodi: 0 }]);
-  useEffect(() => {
-    if (params.id) {
-      fetchDettagliSerie(parseInt(params.id as string));
-    }
-  }, []);
+useEffect(() => {
+  const idNumerico = parseInt(params.tmdbId as string);
+  if (!isNaN(idNumerico)) {
+    fetchDettagliSerie(idNumerico);
+  }
+}, []);
   useEffect(() => {
     const caricaCategorie = async () => {
       try {

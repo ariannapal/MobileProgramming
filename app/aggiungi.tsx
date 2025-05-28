@@ -77,7 +77,7 @@ export default function AggiungiModificaScreen() {
     router.push({
       pathname: "/modifica",
       params: {
-        tmdbId: item.id.toString(), // ✅ corretto
+        tmdbId: item.id.toString(),
         titolo: item.name,
         poster_path: item.poster_path,
         overview: item.overview,

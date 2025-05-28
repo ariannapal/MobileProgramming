@@ -7,10 +7,10 @@ import {
   SafeAreaView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
+import HeaderSearchBar from "./components/headerSearchBar"; // modifica il path se necessario
 
 import { useFocusEffect } from "@react-navigation/native";
 export default function SearchScreen() {
@@ -60,6 +60,16 @@ export default function SearchScreen() {
     );
   });
 
+  const getPosterUri = (posterPath?: string, fallback?: string) => {
+    if (!posterPath)
+      return fallback || "https://via.placeholder.com/120x180?text=?";
+    if (posterPath.startsWith("file://")) return posterPath;
+    if (posterPath.startsWith("/"))
+      return `https://image.tmdb.org/t/p/w185${posterPath}`;
+    if (posterPath.startsWith("http")) return posterPath;
+    return fallback || "https://via.placeholder.com/120x180?text=?";
+  };
+
   const renderItem = ({ item }: any) => (
     <TouchableOpacity
       style={styles.card}
@@ -67,12 +77,11 @@ export default function SearchScreen() {
     >
       <Image
         source={{
-          uri: item.poster_path
-            ? `https://image.tmdb.org/t/p/w185${item.poster_path}`
-            : item.image || "https://via.placeholder.com/120x180?text=?",
+          uri: getPosterUri(item.poster_path, item.image),
         }}
         style={styles.image}
       />
+
       <View style={{ flex: 1 }}>
         <Text style={styles.title} numberOfLines={1}>
           {item.titolo}
@@ -89,13 +98,7 @@ export default function SearchScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
-        <TextInput
-          style={styles.input}
-          placeholder="Cerca per titolo..."
-          placeholderTextColor="#aaa"
-          value={titolo}
-          onChangeText={setTitolo}
-        />
+        <HeaderSearchBar value={titolo} onChange={setTitolo} />
 
         <Text style={styles.label}>Genere</Text>
         <View style={styles.tagsContainer}>
@@ -144,11 +147,6 @@ export default function SearchScreen() {
           keyExtractor={(item, index) => item.id || item.titolo + index}
           renderItem={renderItem}
           showsVerticalScrollIndicator={false}
-          ListEmptyComponent={
-            <Text style={{ color: "#888", marginTop: 20 }}>
-              Nessun risultato
-            </Text>
-          }
           contentContainerStyle={{ paddingBottom: 100 }}
         />
       </View>

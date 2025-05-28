@@ -57,9 +57,23 @@ const StatisticheScreen = () => {
             },
             {}
           );
+          // Carica episodiVisti da ogni serie
+          for (const serie of parsed) {
+            const key = `episodiVisti-${serie.id}`;
+            const raw = await AsyncStorage.getItem(key);
+            const dati = raw ? JSON.parse(raw) : {};
+            const totaleVisti = Object.values(dati)
+              .map((ep: any) => Object.values(ep).filter(Boolean).length)
+              .reduce((sum, val) => sum + val, 0);
 
-          const topSerie = [...parsed]
-            .filter((s: any) => s.episodiVisti)
+            serie.episodiVisti = totaleVisti;
+          }
+
+          const topSerie = parsed
+            .filter(
+              (s: any) =>
+                typeof s.episodiVisti === "number" && s.episodiVisti > 0
+            )
             .sort((a: any, b: any) => b.episodiVisti - a.episodiVisti)
             .slice(0, 5);
 
@@ -87,7 +101,6 @@ const StatisticheScreen = () => {
             distribuzioneGenere,
             distribuzionePiattaforma,
             topSerie,
-            progressiSerie,
           });
         }
       } catch (error) {
@@ -127,15 +140,7 @@ const StatisticheScreen = () => {
       <View style={styles.chartSection}>
         <Text style={styles.title}>Distribuzione per Genere</Text>
         <PieChart
-          data={Object.entries(statistiche.distribuzioneGenere).map(
-            ([key, value]) => ({
-              name: key,
-              population: value,
-              color: randomColor(),
-              legendFontColor: "#7F7F7F",
-              legendFontSize: 14,
-            })
-          )}
+          data={getPieData(statistiche.distribuzioneGenere)}
           width={screenWidth - 40}
           height={220}
           chartConfig={chartConfig}
@@ -148,15 +153,7 @@ const StatisticheScreen = () => {
       <View style={styles.chartSection}>
         <Text style={styles.title}>Distribuzione per Piattaforma</Text>
         <PieChart
-          data={Object.entries(statistiche.distribuzionePiattaforma).map(
-            ([key, value]) => ({
-              name: key,
-              population: value,
-              color: randomColor(),
-              legendFontColor: "#7F7F7F",
-              legendFontSize: 14,
-            })
-          )}
+          data={getPieData(statistiche.distribuzionePiattaforma)}
           width={screenWidth - 40}
           height={220}
           chartConfig={chartConfig}
@@ -168,20 +165,15 @@ const StatisticheScreen = () => {
 
       <View style={styles.statSection}>
         <Text style={styles.title}>Top 5 serie (episodi visti)</Text>
-        {statistiche.topSerie.map((serie: any, i: number) => (
-          <Text key={i} style={styles.statText}>
-            {i + 1}. {serie.titolo} - {serie.episodiVisti} episodi
-          </Text>
-        ))}
-      </View>
-
-      <View style={styles.statSection}>
-        <Text style={styles.title}>Progressi di visione</Text>
-        {statistiche.progressiSerie.map((serie: any, i: number) => (
-          <Text key={i} style={styles.statText}>
-            {serie.titolo}: {serie.completamento}%
-          </Text>
-        ))}
+        {statistiche.topSerie.length > 0 ? (
+          statistiche.topSerie.map((serie: any, i: number) => (
+            <Text key={i} style={styles.statText}>
+              {i + 1}. {serie.titolo} — {serie.episodiVisti} episodi
+            </Text>
+          ))
+        ) : (
+          <Text style={styles.statText}>Nessun dato disponibile.</Text>
+        )}
       </View>
     </ScrollView>
   );
@@ -240,13 +232,23 @@ const styles = StyleSheet.create({
   },
 });
 
-const randomColor = () => {
-  const letters = "0123456789ABCDEF";
-  let color = "#";
-  for (let i = 0; i < 6; i++) {
-    color += letters[Math.floor(Math.random() * 16)];
-  }
-  return color;
+const stableColor = (label: string) => {
+  const hash = label
+    .split("")
+    .reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  const hue = hash % 360;
+  return `hsl(${hue}, 70%, 50%)`;
+};
+
+const getPieData = (source: Record<string, number>) => {
+  const total = Object.values(source).reduce((sum, val) => sum + val, 0);
+  return Object.entries(source).map(([label, count]) => ({
+    name: label,
+    population: count,
+    color: stableColor(label),
+    legendFontColor: "#ccc",
+    legendFontSize: 14,
+  }));
 };
 
 export default StatisticheScreen;

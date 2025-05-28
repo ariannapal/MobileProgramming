@@ -309,16 +309,23 @@ export default function SerieDettaglioScreen() {
             </TouchableOpacity>
           </View>
 
-          <Text style={styles.meta}>
-            {serie.anno} ·{" "}
-            <Text
-              style={{
-                color: serie.stato === "Completata" ? "lightgreen" : "#aaa",
-              }}
-            >
-              {serie.stato === "Completata" ? "Completata" : "In corso"}
-            </Text>
-          </Text>
+
+<Text style={styles.meta}>
+  {serie.anno}
+  {serie.stato !== "suggerita" && (
+    <>
+      {" · "}
+      <Text
+        style={{
+          color: serie.stato === "Completata" ? "lightgreen" : "#aaa",
+        }}
+      >
+        {serie.stato === "Completata" ? "Completata" : "In corso"}
+      </Text>
+    </>
+  )}
+</Text>
+        
           <View style={{ marginVertical: 10 }}>
             <View
               style={{

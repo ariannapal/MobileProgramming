@@ -20,6 +20,7 @@ type Serie = {
   userRating?: number;
   anno?: number;
   genere?: string;
+  stato?: string;
   piattaforma?: string;
   poster_path?: string;
   poster?: string;
@@ -38,8 +39,10 @@ export default function CategoriaScreen() {
         const tutteLeSerie: Serie[] = data ? JSON.parse(data) : [];
 
         const filtrate = tutteLeSerie.filter(
-          (s) => s.genere === nome || s.piattaforma === nome
-        );
+           (s) =>
+            s.stato !== "suggerita" &&
+           (s.genere === nome || s.piattaforma === nome)
+          );
 
         // Recupera i rating da AsyncStorage
         const arricchite = await Promise.all(

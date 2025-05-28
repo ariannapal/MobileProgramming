@@ -16,6 +16,8 @@ import {
   View,
 } from "react-native";
 
+
+
 export default function ModificaScreen() {
   const [localPosterUri, setLocalPosterUri] = useState<string | null>(null);
 
@@ -196,6 +198,25 @@ export default function ModificaScreen() {
 
       parsed.push(nuovaSerie);
       await AsyncStorage.setItem("serie.json", JSON.stringify(parsed));
+
+// Aggiunto: salva stato episodi se completata
+const episodiVistiTotali: { [stagione: string]: { [episodio: number]: boolean } } = {};
+
+for (const stagione of stagioniDettagli) {
+  const numeroEpisodi = stagione.episodi;
+  const episodiStagione: { [episodio: number]: boolean } = {};
+
+  for (let i = 0; i < numeroEpisodi; i++) {
+    episodiStagione[i] = form.stato === "Completata";
+  }
+
+  episodiVistiTotali[`s${stagione.stagione}`] = episodiStagione;
+}
+
+const key = `episodiVisti-${nuovaSerie.id}`;
+await AsyncStorage.setItem(key, JSON.stringify(episodiVistiTotali));
+
+
 
       router.replace("/home");
     } catch (err) {

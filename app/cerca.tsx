@@ -84,7 +84,7 @@ export default function SearchScreen() {
     </TouchableOpacity>
   );
 
-  const stati = ["in corso", "completata"];
+  const stati = ["In corso", "Completata"];
 
   return (
     <SafeAreaView style={styles.safeArea}>

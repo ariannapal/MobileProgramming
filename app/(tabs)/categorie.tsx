@@ -76,15 +76,18 @@ const CategorieScreen = () => {
           const conteggiPiattaforme: Record<string, number> = {};
 
           for (const serie of parsedSerie) {
-            if (serie.genere) {
-              conteggiGeneri[serie.genere] =
+            if (serie.stato === "suggerita") {
+              continue; // Salta questa serie
+               }
+               if (serie.genere) {
+                conteggiGeneri[serie.genere] =
                 (conteggiGeneri[serie.genere] || 0) + 1;
-            }
-            if (serie.piattaforma) {
-              conteggiPiattaforme[serie.piattaforma] =
+              }
+              if (serie.piattaforma) {
+                conteggiPiattaforme[serie.piattaforma] =
                 (conteggiPiattaforme[serie.piattaforma] || 0) + 1;
+              }
             }
-          }
 
           setConteggi({
             generi: conteggiGeneri,

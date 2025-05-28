@@ -204,14 +204,16 @@ export default function HomeScreen() {
 
       // Aggiorna stato locale
       setSuggestedSeries((prev) => [
-        ...prev.filter((item) => item.id !== "loadMore"),
         nuovaSerie,
+        ...prev.filter((item) => item.id !== "loadMore"),
         { id: "loadMore", titolo: "Scopri nuova serie" },
       ]);
     } catch (err) {
       console.error("Errore fetch nuova serie:", err);
     }
   };
+
+  
 
   const renderItem = ({ item }: { item: Serie }) => {
     if (item.id === "loadMore") {
@@ -287,7 +289,7 @@ export default function HomeScreen() {
       <ScrollView showsVerticalScrollIndicator={false}>
         <Text style={styles.sectionTitle}>Serie TV In Corso</Text>
         <FlatList
-          data={serieViste}
+            data={[...serieViste].reverse()}
           keyExtractor={(item, index) => item.id || item.titolo + index}
           horizontal
           renderItem={renderItem}
@@ -297,7 +299,7 @@ export default function HomeScreen() {
 
         <Text style={styles.sectionTitle}>Serie TV Completate</Text>
         <FlatList
-          data={serieCompletate}
+            data={[...serieCompletate].reverse()} 
           keyExtractor={(item, index) => item.id || item.titolo + index}
           horizontal
           renderItem={renderItem}

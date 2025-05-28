@@ -17,17 +17,15 @@ const StatisticheScreen = () => {
 
           const totaliSeguite = parsed.filter(
             (serie: any) =>
-              serie.stato === "Completata" ||
-              serie.stato === "In corso" ||
-              serie.stato === "Pausa"
+              serie.stato === "Completata" || serie.stato === "In corso"
           ).length;
 
           const completate = parsed.filter(
             (serie: any) => serie.stato === "Completata"
           ).length;
 
-          const inPausa = parsed.filter(
-            (serie: any) => serie.stato === "Pausa"
+          const inCorso = parsed.filter(
+            (serie: any) => serie.stato === "In corso"
           ).length;
 
           let totaleEpisodiVisti = 0;
@@ -95,7 +93,7 @@ const StatisticheScreen = () => {
           setStatistiche({
             totaliSeguite,
             completate,
-            inPausa,
+            inCorso,
             mediaSettimana,
             mediaMese,
             distribuzioneGenere,
@@ -120,33 +118,24 @@ const StatisticheScreen = () => {
       <View style={styles.statSection}>
         <Text style={styles.header}>Schermata analisi</Text>
         <Text style={styles.statText}>
-          • Serie seguite: {statistiche.totaliSeguite}
+          Serie seguite: {statistiche.totaliSeguite}
         </Text>
         <Text style={styles.statText}>
-          • Completate: {statistiche.completate}
+          Completate: {statistiche.completate}
         </Text>
-        <Text style={styles.statText}>• In pausa: {statistiche.inPausa}</Text>
-      </View>
-
-      <View style={styles.statSection}>
-        <Text style={styles.statText}>
-          • Episodi per settimana: {statistiche.mediaSettimana.toFixed(2)}
-        </Text>
-        <Text style={styles.statText}>
-          • Episodi per mese: {statistiche.mediaMese.toFixed(2)}
-        </Text>
+        <Text style={styles.statText}>In Corso: {statistiche.inCorso}</Text>
       </View>
 
       <View style={styles.chartSection}>
         <Text style={styles.title}>Distribuzione per Genere</Text>
         <PieChart
           data={getPieData(statistiche.distribuzioneGenere)}
-          width={screenWidth - 40}
+          width={screenWidth - 10}
           height={220}
           chartConfig={chartConfig}
           accessor="population"
           backgroundColor="transparent"
-          paddingLeft="15"
+          paddingLeft="10"
         />
       </View>
 
@@ -154,12 +143,12 @@ const StatisticheScreen = () => {
         <Text style={styles.title}>Distribuzione per Piattaforma</Text>
         <PieChart
           data={getPieData(statistiche.distribuzionePiattaforma)}
-          width={screenWidth - 40}
+          width={screenWidth - 10}
           height={220}
           chartConfig={chartConfig}
           accessor="population"
           backgroundColor="transparent"
-          paddingLeft="15"
+          paddingLeft="10"
         />
       </View>
 
@@ -243,11 +232,12 @@ const stableColor = (label: string) => {
 const getPieData = (source: Record<string, number>) => {
   const total = Object.values(source).reduce((sum, val) => sum + val, 0);
   return Object.entries(source).map(([label, count]) => ({
-    name: label,
+    name: label.length > 20 ? label.slice(0, 17) + "..." : label,
+
     population: count,
     color: stableColor(label),
     legendFontColor: "#ccc",
-    legendFontSize: 14,
+    legendFontSize: 12,
   }));
 };
 

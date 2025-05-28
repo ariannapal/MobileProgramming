@@ -22,10 +22,13 @@ function normalizeSerie(item: any): FavoriteItem {
 
 export async function getFavorites(): Promise<FavoriteItem[]> {
   const json = await AsyncStorage.getItem(STORAGE_KEY);
+  console.log("Sono nella get favoriti"); 
   return json ? JSON.parse(json) : [];
 }
 
 export async function saveFavorite(item: any): Promise<void> {
+  console.log("Sono nella salva favoriti"); 
+
   const favorites = await getFavorites();
   const cleanedItem = normalizeSerie(item);
 
@@ -43,11 +46,15 @@ export async function saveFavorite(item: any): Promise<void> {
 }
 
 export async function isFavorite(id: string): Promise<boolean> {
+  console.log("Sono nella verifica favoriti"); 
+
   const favorites = await getFavorites();
   return favorites.some((f) => String(f.id) === String(id));
 }
 
 export async function removeFavorite(id: string): Promise<void> {
+  console.log("Sono nella rimuovi  favoriti"); 
+
   const favorites = await getFavorites();
   const updated = favorites.filter((f) => String(f.id) !== String(id));
   await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));

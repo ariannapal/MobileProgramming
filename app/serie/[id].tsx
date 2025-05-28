@@ -151,10 +151,19 @@ export default function SerieDettaglioScreen() {
 
   const toggleFavorite = async () => {
     if (!serie) return;
-    await saveFavorite(serie);
+  
+    const alreadyFav = await isFavorite(serie.id);
+  
+    if (alreadyFav) {
+      await removeFavorite(serie.id);
+    } else {
+      await saveFavorite(serie);
+    }
+  
     const updated = await isFavorite(serie.id);
     setIsFav(updated);
   };
+  
   useEffect(() => {
     if (serie && serie.stagioniDettagli) {
       let visti = 0;

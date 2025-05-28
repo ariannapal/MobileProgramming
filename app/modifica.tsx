@@ -15,8 +15,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-
-
+import { saveFavorite } from "./_utils/favoritesStorage";
 
 export default function ModificaScreen() {
   const [localPosterUri, setLocalPosterUri] = useState<string | null>(null);
@@ -62,6 +61,9 @@ export default function ModificaScreen() {
       setLocalPosterUri(pickerResult.assets[0].uri);
     }
   };
+  const poster = Array.isArray(params.poster_path)
+    ? params.poster_path[0]
+    : params.poster_path;
 
   const [form, setForm] = useState({
     titolo: params.titolo as string,
@@ -71,9 +73,11 @@ export default function ModificaScreen() {
     stato: "In corso",
     stagioni: "",
     episodi: "",
-    poster_path: params.poster_path
-      ? `https://image.tmdb.org/t/p/w500${params.poster_path}`
-      : "",
+    poster_path:
+      poster?.startsWith("file://") || poster?.startsWith("http")
+        ? poster
+        : `https://image.tmdb.org/t/p/w500${poster}`,
+
     rating: params.rating as string,
     anno: params.anno as string,
   });
@@ -84,13 +88,19 @@ export default function ModificaScreen() {
         {
           headers: {
             Authorization:
-              "Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiIxYWMxMzU4NjY3ZjcyODgzNWRhZjk2YjAxZDZkODVhMCIsIm5iZiI6MTc0Njc3ODg1MC4zMTcsInN1YiI6IjY4MWRiYWUyM2E2OGExMTcyOTYzYmQxNiIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.I6RbtWrCPo0n0YWNYNfGs0wnAcIrG0n5t4KYh0W7Am4",
+              "Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiIxYWMxMzU4NjY3ZjcyODgzNWRhZjk2YjAxZDZkODVhMCIsIm5iZiI6MTc0Njc3ODg1MC4zMTcsInN1YiI6IjY4MWRiYWUyM2E2OGExMTcyOTYzYmQxNiIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.I6RbtWrCPo0n0YWNYNfGs0wnAcIrG0n5t4KYh0W7Am4", // token tuo
             accept: "application/json",
           },
         }
       );
 
       const data = await res.json();
+
+      if (!data || !Array.isArray(data.seasons)) {
+        console.warn("Attenzione: dati stagioni non disponibili", data);
+        return;
+      }
+
       const episodiPerStagione = data.seasons.map((s: any) => ({
         stagione: s.season_number,
         episodi: s.episode_count,
@@ -149,74 +159,61 @@ export default function ModificaScreen() {
     if (localPosterUri) {
       percorsoFinalePoster = await copiaImmagineLocale(localPosterUri);
     }
+
     try {
-      const nuovaSerie = {
-        id: Date.now().toString(),
+      const esistentiRaw = await AsyncStorage.getItem("serie.json");
+      const esistenti = esistentiRaw ? JSON.parse(esistentiRaw) : [];
+
+      let nuovaSerie = {
         ...form,
+        id: params.id || Date.now().toString(), // se esiste id, lo mantieni
         poster_path: percorsoFinalePoster,
         stagioniDettagli: stagioniDettagli,
       };
-      // Salva categorie nuove (genere e piattaforma)
-      const categorieRaw = await AsyncStorage.getItem("categorie_dati");
-      let categorie = categorieRaw
-        ? JSON.parse(categorieRaw)
-        : { generi: [], piattaforme: [] };
 
-      if (
-        form.genere &&
-        !categorie.generi.some((g: any) => g.nome === form.genere)
-      ) {
-        categorie.generi.push({
-          id: Date.now().toString() + "_gen",
-          nome: form.genere,
-        });
+      let nuovaLista;
+
+      if (params.id) {
+        // MODIFICA: sostituisci la serie esistente
+        nuovaLista = esistenti.map((s: any) =>
+          String(s.id) === String(params.id) ? nuovaSerie : s
+        );
+      } else {
+        // CREAZIONE: controlla se esiste già una con lo stesso titolo
+        const giàPresente = esistenti.some(
+          (s: any) => s.titolo === nuovaSerie.titolo
+        );
+        if (giàPresente) {
+          alert("Questa serie è già presente.");
+          return;
+        }
+        nuovaLista = [...esistenti, nuovaSerie];
       }
 
-      if (
-        form.piattaforma &&
-        !categorie.piattaforme.some((p: any) => p.nome === form.piattaforma)
-      ) {
-        categorie.piattaforme.push({
-          id: Date.now().toString() + "_plat",
-          nome: form.piattaforma,
-        });
+      await AsyncStorage.setItem("serie.json", JSON.stringify(nuovaLista));
+      await saveFavorite(nuovaSerie);
+
+      // Se è una modifica, non toccare gli episodi
+      // Se è una nuova, imposta tutti visti se "Completata"
+      if (!params.id) {
+        const episodiVistiTotali: {
+          [stagione: string]: { [episodio: number]: boolean };
+        } = {};
+
+        for (const stagione of stagioniDettagli) {
+          const numeroEpisodi = stagione.episodi;
+          const episodiStagione: { [episodio: number]: boolean } = {};
+
+          for (let i = 0; i < numeroEpisodi; i++) {
+            episodiStagione[i] = form.stato === "Completata";
+          }
+
+          episodiVistiTotali[`s${stagione.stagione}`] = episodiStagione;
+        }
+
+        const key = `episodiVisti-${nuovaSerie.id}`;
+        await AsyncStorage.setItem(key, JSON.stringify(episodiVistiTotali));
       }
-
-      await AsyncStorage.setItem("categorie_dati", JSON.stringify(categorie));
-
-      const esistenti = await AsyncStorage.getItem("serie.json");
-      const parsed = esistenti ? JSON.parse(esistenti) : [];
-
-      const giàPresente = parsed.some(
-        (s: any) => s.titolo === nuovaSerie.titolo
-      );
-
-      if (giàPresente) {
-        alert("Questa serie è già presente.");
-        return;
-      }
-
-      parsed.push(nuovaSerie);
-      await AsyncStorage.setItem("serie.json", JSON.stringify(parsed));
-
-// Aggiunto: salva stato episodi se completata
-const episodiVistiTotali: { [stagione: string]: { [episodio: number]: boolean } } = {};
-
-for (const stagione of stagioniDettagli) {
-  const numeroEpisodi = stagione.episodi;
-  const episodiStagione: { [episodio: number]: boolean } = {};
-
-  for (let i = 0; i < numeroEpisodi; i++) {
-    episodiStagione[i] = form.stato === "Completata";
-  }
-
-  episodiVistiTotali[`s${stagione.stagione}`] = episodiStagione;
-}
-
-const key = `episodiVisti-${nuovaSerie.id}`;
-await AsyncStorage.setItem(key, JSON.stringify(episodiVistiTotali));
-
-
 
       router.replace("/home");
     } catch (err) {

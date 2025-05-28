@@ -33,8 +33,11 @@ export async function saveFavorite(item: any): Promise<void> {
   const exists = favorites.some((f) => String(f.id) === String(cleanedItem.id));
 
   const updated = exists
-    ? favorites.filter((f) => String(f.id) !== String(cleanedItem.id))
-    : [...favorites, cleanedItem];
+  ? favorites.map((f) =>
+      String(f.id) === String(cleanedItem.id) ? cleanedItem : f
+    )
+  : [...favorites, cleanedItem];
+
 
   await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
 }

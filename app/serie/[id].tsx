@@ -252,10 +252,36 @@ export default function SerieDettaglioScreen() {
       />
       <SafeAreaView style={{ flex: 1, backgroundColor: "#0f0f2a" }}>
         <ScrollView style={styles.container}>
-          <Pressable onPress={() => router.back()} style={styles.back}>
-            <Ionicons name="chevron-back" size={24} color="#fff" />
-            <Text style={styles.backText}>Indietro</Text>
-          </Pressable>
+          <View style={[styles.back, { justifyContent: "space-between" }]}>
+            <Pressable
+              onPress={() => router.back()}
+              style={{ flexDirection: "row", alignItems: "center" }}
+            >
+              <Ionicons name="chevron-back" size={24} color="#fff" />
+              <Text style={styles.backText}>Indietro</Text>
+            </Pressable>
+
+            <Pressable
+              onPress={() => {
+                router.push({
+                  pathname: "/modifica",
+                  params: {
+                    id: serie.id,
+                    titolo: serie.titolo,
+                    overview: serie.trama,
+                    genere: serie.genere,
+                    piattaforma: serie.piattaforma,
+                    poster_path: serie.poster_path,
+                    rating: serie.rating,
+                    anno: serie.anno,
+                  },
+                });
+              }}
+              style={{ paddingHorizontal: 4 }}
+            >
+              <Ionicons name="create-outline" size={24} color="#fff" />
+            </Pressable>
+          </View>
 
           <Image
             source={{ uri: imageBase64 || imageUri }}

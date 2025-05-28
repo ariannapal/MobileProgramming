@@ -76,7 +76,7 @@ export default function ModificaScreen() {
     titolo: params.titolo as string,
     trama: params.overview as string,
     genere: params.genere as string,
-    piattaforma: "Netflix",
+    piattaforma: (params.piattaforma as string) || "Netflix",
     stato: "In corso",
     stagioni: "",
     episodi: "",

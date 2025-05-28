@@ -15,13 +15,20 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { saveFavorite } from "./_utils/favoritesStorage";
+import { isFavorite, saveFavorite } from "./_utils/favoritesStorage";
 
 export default function ModificaScreen() {
   const [localPosterUri, setLocalPosterUri] = useState<string | null>(null);
 
   const router = useRouter();
   const params = useLocalSearchParams();
+  const id = Array.isArray(params.id) ? params.id[0] : params.id;
+
+  const tmdbId = Array.isArray(params.tmdbId)
+    ? params.tmdbId[0]
+    : params.tmdbId;
+  const isModifica = !!id;
+
   const [categorieGeneri, setCategorieGeneri] = useState<string[]>([]);
   const [categoriePiattaforme, setCategoriePiattaforme] = useState<string[]>(
     []
@@ -166,20 +173,19 @@ export default function ModificaScreen() {
 
       let nuovaSerie = {
         ...form,
-        id: params.id || Date.now().toString(), // se esiste id, lo mantieni
+        id: isModifica ? id : Date.now().toString(),
+        tmdbId: tmdbId ?? null,
         poster_path: percorsoFinalePoster,
         stagioniDettagli: stagioniDettagli,
       };
-
+      const eraPreferita = await isFavorite(nuovaSerie.id);
       let nuovaLista;
 
-      if (params.id) {
-        // MODIFICA: sostituisci la serie esistente
+      if (isModifica) {
         nuovaLista = esistenti.map((s: any) =>
-          String(s.id) === String(params.id) ? nuovaSerie : s
+          String(s.id) === String(id) ? nuovaSerie : s
         );
       } else {
-        // CREAZIONE: controlla se esiste già una con lo stesso titolo
         const giàPresente = esistenti.some(
           (s: any) => s.titolo === nuovaSerie.titolo
         );
@@ -191,7 +197,25 @@ export default function ModificaScreen() {
       }
 
       await AsyncStorage.setItem("serie.json", JSON.stringify(nuovaLista));
-      await saveFavorite(nuovaSerie);
+      if (eraPreferita) {
+        await saveFavorite(nuovaSerie); // aggiorna i dati salvati
+      }
+      console.log("ID in modifica:", id);
+      console.log(
+        "Serie salvate:",
+        esistenti.map((s: any) => s.id)
+      );
+
+      alert(isModifica ? "Modifica salvata!" : "Serie aggiunta alla libreria!");
+      console.log("Salvo/modifico serie con ID:", nuovaSerie.id);
+      console.log(
+        "Serie esistenti:",
+        esistenti.map((s: any) => s.id)
+      );
+      console.log(
+        "Serie modificata:",
+        esistenti.find((s: any) => String(s.id) === String(id))
+      );
 
       // Se è una modifica, non toccare gli episodi
       // Se è una nuova, imposta tutti visti se "Completata"

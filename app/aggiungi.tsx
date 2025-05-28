@@ -77,13 +77,14 @@ export default function AggiungiModificaScreen() {
     router.push({
       pathname: "/modifica",
       params: {
-        id: item.id.toString(),
+        tmdbId: item.id.toString(), // ✅ corretto
         titolo: item.name,
         poster_path: item.poster_path,
         overview: item.overview,
         rating: item.vote_average?.toFixed(1) || "",
         anno: item.first_air_date?.substring(0, 4) || "",
         genere: item.genere_nome || "",
+        piattaforma: "", // opzionale
       },
     });
   };

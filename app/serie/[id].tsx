@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Checkbox } from "expo-checkbox";
 import * as FileSystem from "expo-file-system";
+import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
@@ -23,6 +24,7 @@ import {
   removeFavorite,
   saveFavorite,
 } from "../_utils/favoritesStorage";
+
 import SeasonPicker from "./SeasonPicker"; // adatta il path se necessario
 
 export default function SerieDettaglioScreen() {
@@ -40,6 +42,9 @@ export default function SerieDettaglioScreen() {
   const [episodiVistiData, setEpisodiVistiData] = useState<{
     [stagione: string]: { [episodio: number]: boolean };
   }>({});
+  const [completamentoPercentuale, setCompletamentoPercentuale] = useState(0);
+  const [episodiVisti, setEpisodiVisti] = useState(0);
+  const [episodiTotali, setEpisodiTotali] = useState(0);
   useEffect(() => {
     const loadBase64 = async () => {
       if (serie?.poster_path?.startsWith("file://")) {
@@ -150,6 +155,27 @@ export default function SerieDettaglioScreen() {
     const updated = await isFavorite(serie.id);
     setIsFav(updated);
   };
+  useEffect(() => {
+    if (serie && serie.stagioniDettagli) {
+      let visti = 0;
+      let totali = 0;
+
+      serie.stagioniDettagli.forEach((stagione: any) => {
+        const key = `s${stagione.stagione}`;
+        const episodi = stagione.episodi;
+        const vistiStagione = Object.values(episodiVistiData[key] || {}).filter(
+          Boolean
+        ).length;
+
+        totali += episodi;
+        visti += vistiStagione;
+      });
+
+      setEpisodiTotali(totali);
+      setEpisodiVisti(visti);
+      setCompletamentoPercentuale(totali > 0 ? visti / totali : 0);
+    }
+  }, [serie, episodiVistiData]);
 
   const deleteSerie = () => {
     Alert.alert(
@@ -258,6 +284,33 @@ export default function SerieDettaglioScreen() {
               {serie.stato === "Completata" ? "Completata" : "In corso"}
             </Text>
           </Text>
+          <View style={{ marginVertical: 10 }}>
+            <View
+              style={{
+                height: 8,
+                backgroundColor: "#333",
+                borderRadius: 10,
+                overflow: "hidden",
+                width: "100%",
+              }}
+            >
+              <LinearGradient
+                colors={["#a18cd1", "#fbc2eb"]}
+                start={[0, 0]}
+                end={[1, 0]}
+                style={{
+                  height: "100%",
+                  width: `${completamentoPercentuale * 100}%`,
+                }}
+              />
+            </View>
+            <Text
+              style={{ color: "#aaa", alignSelf: "flex-end", marginTop: 4 }}
+            >
+              {episodiVisti}/{episodiTotali}
+            </Text>
+          </View>
+
           {serie?.stato !== "suggerita" && (
             <>
               <Text style={styles.sectionTitle}>Il tuo voto</Text>

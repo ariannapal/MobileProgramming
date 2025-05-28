@@ -152,21 +152,16 @@ export default function SerieDettaglioScreen() {
   const toggleFavorite = async () => {
     if (!serie) return;
 
-    console.log("TOGGLE FAVORITE - Serie ID:", serie.id);
-    console.log("È attualmente nei preferiti?", isFav);
+    const alreadyFav = await isFavorite(serie.id);
 
-    if (isFav) {
+    if (alreadyFav) {
       await removeFavorite(serie.id);
-      console.log("RIMOSSA dai preferiti");
-      setIsFav(false);
     } else {
       await saveFavorite(serie);
-      console.log("AGGIUNTA ai preferiti");
-      setIsFav(true);
     }
 
-    const postCheck = await isFavorite(serie.id);
-    console.log("È nei preferiti dopo l'azione?", postCheck);
+    const updated = await isFavorite(serie.id);
+    setIsFav(updated);
   };
 
   useEffect(() => {

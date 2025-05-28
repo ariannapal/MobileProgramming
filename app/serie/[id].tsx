@@ -151,10 +151,24 @@ export default function SerieDettaglioScreen() {
 
   const toggleFavorite = async () => {
     if (!serie) return;
-    await saveFavorite(serie);
-    const updated = await isFavorite(serie.id);
-    setIsFav(updated);
+
+    console.log("TOGGLE FAVORITE - Serie ID:", serie.id);
+    console.log("È attualmente nei preferiti?", isFav);
+
+    if (isFav) {
+      await removeFavorite(serie.id);
+      console.log("RIMOSSA dai preferiti");
+      setIsFav(false);
+    } else {
+      await saveFavorite(serie);
+      console.log("AGGIUNTA ai preferiti");
+      setIsFav(true);
+    }
+
+    const postCheck = await isFavorite(serie.id);
+    console.log("È nei preferiti dopo l'azione?", postCheck);
   };
+
   useEffect(() => {
     if (serie && serie.stagioniDettagli) {
       let visti = 0;

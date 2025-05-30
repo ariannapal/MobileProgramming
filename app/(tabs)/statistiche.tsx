@@ -1,3 +1,4 @@
+import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect } from "@react-navigation/native";
 import React, { useCallback, useState } from "react";
@@ -140,6 +141,14 @@ const StatisticheScreen = () => {
   if (!statistiche) {
     return <Text style={styles.loadingText}>Caricamento...</Text>;
   }
+  const ChartPlaceholder = ({ label }: { label: string }) => (
+    <View style={{ alignItems: "center", marginTop: 20 }}>
+      <Ionicons name="pie-chart-outline" size={50} color="#555" />
+      <Text style={[styles.statText, { marginTop: 10, textAlign: "center" }]}>
+        Nessun dato disponibile
+      </Text>
+    </View>
+  );
 
   return (
     <ScrollView style={styles.container}>
@@ -168,7 +177,8 @@ const StatisticheScreen = () => {
 
       <View style={styles.chartSection}>
         <Text style={styles.title}>Distribuzione per Genere</Text>
-        {statistiche.distribuzioneGenere > 0 ? (
+
+        {Object.keys(statistiche.distribuzioneGenere).length > 0 ? (
           <PieChart
             data={getPieData(statistiche.distribuzioneGenere)}
             width={screenWidth - 10}
@@ -179,13 +189,13 @@ const StatisticheScreen = () => {
             paddingLeft="10"
           />
         ) : (
-          <Text style={styles.statText}>Nessun dato disponibile</Text>
+          <ChartPlaceholder label="Genere" />
         )}
       </View>
 
       <View style={styles.chartSection}>
         <Text style={styles.title}>Distribuzione per Piattaforma</Text>
-        {statistiche.distribuzionePiattaforma > 0 ? (
+        {Object.keys(statistiche.distribuzionePiattaforma).length > 0 ? (
           <PieChart
             data={getPieData(statistiche.distribuzionePiattaforma)}
             width={screenWidth - 10}
@@ -196,7 +206,7 @@ const StatisticheScreen = () => {
             paddingLeft="10"
           />
         ) : (
-          <Text style={styles.statText}>Nessun dato disponibile</Text>
+          <ChartPlaceholder label="Piattaforma" />
         )}
       </View>
     </ScrollView>

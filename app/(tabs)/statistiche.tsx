@@ -144,7 +144,7 @@ const StatisticheScreen = () => {
   return (
     <ScrollView style={styles.container}>
       <View style={styles.statSection}>
-        <Text style={styles.header}>Schermata analisi</Text>
+        <Text style={styles.header}>Report delle Tue Serie</Text>
         <Text style={styles.statText}>
           Serie seguite: {statistiche.totaliSeguite}
         </Text>
@@ -153,35 +153,8 @@ const StatisticheScreen = () => {
         </Text>
         <Text style={styles.statText}>In Corso: {statistiche.inCorso}</Text>
       </View>
-
-      <View style={styles.chartSection}>
-        <Text style={styles.title}>Distribuzione per Genere</Text>
-        <PieChart
-          data={getPieData(statistiche.distribuzioneGenere)}
-          width={screenWidth - 10}
-          height={220}
-          chartConfig={chartConfig}
-          accessor="population"
-          backgroundColor="transparent"
-          paddingLeft="10"
-        />
-      </View>
-
-      <View style={styles.chartSection}>
-        <Text style={styles.title}>Distribuzione per Piattaforma</Text>
-        <PieChart
-          data={getPieData(statistiche.distribuzionePiattaforma)}
-          width={screenWidth - 10}
-          height={220}
-          chartConfig={chartConfig}
-          accessor="population"
-          backgroundColor="transparent"
-          paddingLeft="10"
-        />
-      </View>
-
       <View style={styles.statSection}>
-        <Text style={styles.title}>Top 5 serie (episodi visti)</Text>
+        <Text style={styles.title}>Top 5 serie</Text>
         {statistiche.topSerie.length > 0 ? (
           statistiche.topSerie.map((serie: any, i: number) => (
             <Text key={i} style={styles.statText}>
@@ -189,7 +162,41 @@ const StatisticheScreen = () => {
             </Text>
           ))
         ) : (
-          <Text style={styles.statText}>Nessun dato disponibile.</Text>
+          <Text style={styles.statText}>Nessun dato disponibile</Text>
+        )}
+      </View>
+
+      <View style={styles.chartSection}>
+        <Text style={styles.title}>Distribuzione per Genere</Text>
+        {statistiche.distribuzioneGenere > 0 ? (
+          <PieChart
+            data={getPieData(statistiche.distribuzioneGenere)}
+            width={screenWidth - 10}
+            height={220}
+            chartConfig={chartConfig}
+            accessor="population"
+            backgroundColor="transparent"
+            paddingLeft="10"
+          />
+        ) : (
+          <Text style={styles.statText}>Nessun dato disponibile</Text>
+        )}
+      </View>
+
+      <View style={styles.chartSection}>
+        <Text style={styles.title}>Distribuzione per Piattaforma</Text>
+        {statistiche.distribuzionePiattaforma > 0 ? (
+          <PieChart
+            data={getPieData(statistiche.distribuzionePiattaforma)}
+            width={screenWidth - 10}
+            height={220}
+            chartConfig={chartConfig}
+            accessor="population"
+            backgroundColor="transparent"
+            paddingLeft="10"
+          />
+        ) : (
+          <Text style={styles.statText}>Nessun dato disponibile</Text>
         )}
       </View>
     </ScrollView>

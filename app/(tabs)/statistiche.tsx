@@ -44,7 +44,8 @@ const StatisticheScreen = () => {
           const serieValide = parsed.filter(
             (serie: any) =>
               typeof serie.titolo === "string" &&
-              typeof serie.stato === "string"
+              typeof serie.stato === "string" &&
+              serie.stato.toLowerCase() !== "suggerita"
           );
 
           let totaleEpisodiVisti = 0;

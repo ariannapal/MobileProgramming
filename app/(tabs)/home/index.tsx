@@ -5,6 +5,7 @@ import { useRouter } from "expo-router";
 import React, { useCallback, useState } from "react";
 import {
   Alert,
+  Button,
   FlatList,
   Image,
   ScrollView,
@@ -137,6 +138,35 @@ export default function HomeScreen() {
       return null;
     }
   };
+  const resetAppData = async () => {
+    try {
+      const keys = await AsyncStorage.getAllKeys();
+
+      // Filtra solo le chiavi che usi nella tua app
+      const relevantKeys = keys.filter(
+        (key) =>
+          key === "serie.json" ||
+          key.startsWith("episodiVisti-") ||
+          key === "preferiti"
+      );
+
+      if (relevantKeys.length > 0) {
+        await AsyncStorage.multiRemove(relevantKeys);
+        console.log("Dati dell'app resettati:", relevantKeys);
+        Alert.alert("Reset completato", "Tutti i dati sono stati eliminati");
+      } else {
+        Alert.alert("Nessun dato da cancellare");
+      }
+
+      // Pulisce lo stato locale per mostrare subito l'effetto
+      setSerieViste([]);
+      setSerieCompletate([]);
+      setSuggestedSeries([{ id: "loadMore", titolo: "Scopri nuova serie" }]);
+    } catch (error) {
+      console.error("Errore durante il reset dei dati:", error);
+      Alert.alert("Errore", "Non è stato possibile eliminare i dati");
+    }
+  };
 
   const fetchNuovaSerie = async () => {
     try {
@@ -213,8 +243,6 @@ export default function HomeScreen() {
     }
   };
 
-  
-
   const renderItem = ({ item }: { item: Serie }) => {
     if (item.id === "loadMore") {
       return (
@@ -289,24 +317,22 @@ export default function HomeScreen() {
       <ScrollView showsVerticalScrollIndicator={false}>
         <Text style={styles.sectionTitle}>Serie TV In Corso</Text>
         <FlatList
-            data={[...serieViste].reverse()}
+          data={[...serieViste].reverse()}
           keyExtractor={(item, index) => item.id || item.titolo + index}
           horizontal
           renderItem={renderItem}
           contentContainerStyle={styles.horizontalList}
           showsHorizontalScrollIndicator={false}
         />
-
         <Text style={styles.sectionTitle}>Serie TV Completate</Text>
         <FlatList
-            data={[...serieCompletate].reverse()} 
+          data={[...serieCompletate].reverse()}
           keyExtractor={(item, index) => item.id || item.titolo + index}
           horizontal
           renderItem={renderItem}
           contentContainerStyle={styles.horizontalList}
           showsHorizontalScrollIndicator={false}
         />
-
         <Text style={styles.sectionTitle}>Suggeriti per te</Text>
         <FlatList
           data={suggestedSeries}
@@ -315,6 +341,24 @@ export default function HomeScreen() {
           renderItem={renderItem}
           contentContainerStyle={styles.horizontalList}
           showsHorizontalScrollIndicator={false}
+        />
+        <Button
+          title="Resetta Tutto"
+          color="#ff4444"
+          onPress={() =>
+            Alert.alert(
+              "Conferma Reset",
+              "Sei sicuro di voler eliminare tutti i dati dell'app?",
+              [
+                { text: "Annulla", style: "cancel" },
+                {
+                  text: "Conferma",
+                  style: "destructive",
+                  onPress: resetAppData,
+                },
+              ]
+            )
+          }
         />
       </ScrollView>
     </View>

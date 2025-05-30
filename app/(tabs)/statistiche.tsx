@@ -1,5 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import React, { useEffect, useState } from "react";
+import { useFocusEffect } from "@react-navigation/native";
+import React, { useCallback, useState } from "react";
 import { Dimensions, ScrollView, StyleSheet, Text, View } from "react-native";
 import { PieChart } from "react-native-chart-kit";
 
@@ -8,29 +9,47 @@ const screenWidth = Dimensions.get("window").width;
 const StatisticheScreen = () => {
   const [statistiche, setStatistiche] = useState<any>(null);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const serieData = await AsyncStorage.getItem("serie.json");
-        if (serieData !== null) {
+  useFocusEffect(
+    useCallback(() => {
+      const fetchData = async () => {
+        try {
+          const serieData = await AsyncStorage.getItem("serie.json");
+
+          if (!serieData) {
+            setStatistiche({
+              totaliSeguite: 0,
+              completate: 0,
+              inCorso: 0,
+              mediaSettimana: 0,
+              mediaMese: 0,
+              distribuzioneGenere: {},
+              distribuzionePiattaforma: {},
+              topSerie: [],
+            });
+            return;
+          }
+
           const parsed = JSON.parse(serieData);
 
-          const totaliSeguite = parsed.filter(
+          for (const serie of parsed) {
+            const key = `episodiVisti-${serie.id}`;
+            const raw = await AsyncStorage.getItem(key);
+            const dati = raw ? JSON.parse(raw) : {};
+            const totaleVisti = Object.values(dati)
+              .map((ep: any) => Object.values(ep).filter(Boolean).length)
+              .reduce((sum, val) => sum + val, 0);
+            serie.episodiVisti = totaleVisti;
+          }
+
+          const serieValide = parsed.filter(
             (serie: any) =>
-              serie.stato === "Completata" || serie.stato === "In corso"
-          ).length;
-
-          const completate = parsed.filter(
-            (serie: any) => serie.stato === "Completata"
-          ).length;
-
-          const inCorso = parsed.filter(
-            (serie: any) => serie.stato === "In corso"
-          ).length;
+              typeof serie.titolo === "string" &&
+              typeof serie.stato === "string"
+          );
 
           let totaleEpisodiVisti = 0;
           let settimaneTotali = 0;
-          parsed.forEach((serie: any) => {
+          serieValide.forEach((serie: any) => {
             if (serie.episodiVisti && serie.durataSettimane) {
               totaleEpisodiVisti += serie.episodiVisti;
               settimaneTotali += serie.durataSettimane;
@@ -41,13 +60,16 @@ const StatisticheScreen = () => {
             settimaneTotali > 0 ? totaleEpisodiVisti / settimaneTotali : 0;
           const mediaMese = mediaSettimana * 4;
 
-          const distribuzioneGenere = parsed.reduce((acc: any, serie: any) => {
-            const genere = serie.genere || "Non specificato";
-            acc[genere] = (acc[genere] || 0) + 1;
-            return acc;
-          }, {});
+          const distribuzioneGenere = serieValide.reduce(
+            (acc: any, serie: any) => {
+              const genere = serie.genere || "Non specificato";
+              acc[genere] = (acc[genere] || 0) + 1;
+              return acc;
+            },
+            {}
+          );
 
-          const distribuzionePiattaforma = parsed.reduce(
+          const distribuzionePiattaforma = serieValide.reduce(
             (acc: any, serie: any) => {
               const piattaforma = serie.piattaforma || "Non specificato";
               acc[piattaforma] = (acc[piattaforma] || 0) + 1;
@@ -55,19 +77,21 @@ const StatisticheScreen = () => {
             },
             {}
           );
-          // Carica episodiVisti da ogni serie
-          for (const serie of parsed) {
-            const key = `episodiVisti-${serie.id}`;
-            const raw = await AsyncStorage.getItem(key);
-            const dati = raw ? JSON.parse(raw) : {};
-            const totaleVisti = Object.values(dati)
-              .map((ep: any) => Object.values(ep).filter(Boolean).length)
-              .reduce((sum, val) => sum + val, 0);
 
-            serie.episodiVisti = totaleVisti;
-          }
+          const totaliSeguite = serieValide.filter(
+            (serie: any) =>
+              serie.stato === "Completata" || serie.stato === "In corso"
+          ).length;
 
-          const topSerie = parsed
+          const completate = serieValide.filter(
+            (serie: any) => serie.stato === "Completata"
+          ).length;
+
+          const inCorso = serieValide.filter(
+            (serie: any) => serie.stato === "In corso"
+          ).length;
+
+          const topSerie = serieValide
             .filter(
               (s: any) =>
                 typeof s.episodiVisti === "number" && s.episodiVisti > 0
@@ -75,7 +99,7 @@ const StatisticheScreen = () => {
             .sort((a: any, b: any) => b.episodiVisti - a.episodiVisti)
             .slice(0, 5);
 
-          const progressiSerie = parsed
+          const progressiSerie = serieValide
             .map((serie: any) => {
               if (serie.episodiVisti && serie.episodiTotali) {
                 return {
@@ -100,14 +124,17 @@ const StatisticheScreen = () => {
             distribuzionePiattaforma,
             topSerie,
           });
+        } catch (error) {
+          console.error(
+            "Errore nel recupero delle serie da AsyncStorage",
+            error
+          );
         }
-      } catch (error) {
-        console.error("Errore nel recupero delle serie da AsyncStorage", error);
-      }
-    };
+      };
 
-    fetchData();
-  }, []);
+      fetchData();
+    }, [])
+  );
 
   if (!statistiche) {
     return <Text style={styles.loadingText}>Caricamento...</Text>;

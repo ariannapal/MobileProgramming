@@ -273,7 +273,7 @@ export default function SerieDettaglioScreen() {
               <Ionicons name="chevron-back" size={24} color="#fff" />
               <Text style={styles.backText}>Indietro</Text>
             </Pressable>
-
+        {serie.stato !== "suggerita" && (
             <Pressable
               onPress={() => {
                 router.push({
@@ -294,6 +294,8 @@ export default function SerieDettaglioScreen() {
             >
               <Ionicons name="create-outline" size={24} color="#fff" />
             </Pressable>
+
+            )}
           </View>
 
           <Image

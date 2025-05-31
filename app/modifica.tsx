@@ -108,10 +108,12 @@ export default function ModificaScreen() {
         return;
       }
 
-      const episodiPerStagione = data.seasons.map((s: any) => ({
-        stagione: s.season_number,
-        episodi: s.episode_count,
-      }));
+      const episodiPerStagione = data.seasons
+  .filter((s: any) => s.season_number !== 0)
+  .map((s: any) => ({
+    stagione: s.season_number,
+    episodi: s.episode_count,
+  }));
 
       setStagioniDettagli(episodiPerStagione);
       aggiornaCampo("stagioni", data.number_of_seasons?.toString() || "");

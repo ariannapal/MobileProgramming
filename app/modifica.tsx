@@ -28,6 +28,8 @@ export default function ModificaScreen() {
     ? params.tmdbId[0]
     : params.tmdbId;
   const isModifica = !!id;
+  //Se params.id è presente (es. "123"), allora id = "123" → !!id = true
+  //Se params.id è undefined o null, allora id = undefined → !!id = false
 
   const [categorieGeneri, setCategorieGeneri] = useState<string[]>([]);
   const [categoriePiattaforme, setCategoriePiattaforme] = useState<string[]>(
@@ -72,6 +74,7 @@ export default function ModificaScreen() {
     ? params.poster_path[0]
     : params.poster_path;
 
+  //dati della schermata precedente
   const [form, setForm] = useState({
     titolo: params.titolo as string,
     trama: params.overview as string,
@@ -84,7 +87,10 @@ export default function ModificaScreen() {
       poster?.startsWith("file://") || poster?.startsWith("http")
         ? poster
         : `https://image.tmdb.org/t/p/w500${poster}`,
-
+    // Se il poster inizia con "file://" o "http",
+    // vuol dire che è già un URL valido → lo usa così com'è
+    //Se non inizia con file:// o http, vuol dire che è solo un path parziale da TMDb
+    // (es: "/xytag123.jpg"), quindi lo costruisce
     rating: params.rating as string,
     anno: params.anno as string,
   });
@@ -108,12 +114,23 @@ export default function ModificaScreen() {
         return;
       }
 
-      const episodiPerStagione = data.seasons
+    
+      //data.seasons è un array di stagioni provenienti dalla risposta di TMDb.
+      //Ogni s rappresenta una stagione
+        const episodiPerStagione = data.seasons
   .filter((s: any) => s.season_number !== 0)
   .map((s: any) => ({
     stagione: s.season_number,
     episodi: s.episode_count,
   }));
+   
+      episodiPerStagione.forEach(
+        (stagione: { stagione: number; episodi: number }) => {
+          console.log(
+            "Stagione: " + stagione.stagione + ", Episodi: " + stagione.episodi
+          );
+        }
+      );
 
       setStagioniDettagli(episodiPerStagione);
       aggiornaCampo("stagioni", data.number_of_seasons?.toString() || "");
@@ -122,16 +139,20 @@ export default function ModificaScreen() {
       console.error("Errore dettagli serie:", err);
     }
   };
-
+  //Definisco uno stato stagioniDettagli
+  //Tipizzato come array di oggetti:  {stagione: number; episodi: number }
+  //inizializzato a [{ stagione: 1, episodi: 0 }]
   const [stagioniDettagli, setStagioniDettagli] = useState<
     { stagione: number; episodi: number }[]
   >([{ stagione: 1, episodi: 0 }]);
-useEffect(() => {
-  const idNumerico = parseInt(params.tmdbId as string);
-  if (!isNaN(idNumerico)) {
-    fetchDettagliSerie(idNumerico);
-  }
-}, []);
+  useEffect(() => {
+    const idNumerico = parseInt(params.tmdbId as string);
+    if (!isNaN(idNumerico)) {
+      fetchDettagliSerie(idNumerico);
+    }
+  }, []);
+
+  //Carica le categorie da AsyncStorage per dropdown
   useEffect(() => {
     const caricaCategorie = async () => {
       try {
@@ -159,47 +180,85 @@ useEffect(() => {
 
     caricaCategorie();
   }, []);
-
+  //...prev Copia tutti i campi già esistenti dell’oggetto form
   const aggiornaCampo = (campo: string, valore: string) => {
     setForm((prev) => ({ ...prev, [campo]: valore }));
   };
 
+  //se faccio una modifica, devono esserci anche i dettagli della serie
+  useEffect(() => {
+    const caricaStagioniInModifica = async () => {
+      if (isModifica && params.id) {
+        try {
+          const esistentiRaw = await AsyncStorage.getItem("serie.json");
+          const esistenti = esistentiRaw ? JSON.parse(esistentiRaw) : [];
+          const serie = esistenti.find(
+            (s: any) => String(s.id) === String(params.id)
+          );
+          if (serie?.stagioniDettagli) {
+            setStagioniDettagli(serie.stagioniDettagli);
+          }
+        } catch (err) {
+          console.error("Errore nel caricamento stagioni per modifica:", err);
+        }
+      }
+    };
+    caricaStagioniInModifica();
+  }, []);
+
+  //salvataggio nel file serie.json in AsyncStorage
   const salvaSerieNelJson = async () => {
+    //Se l'utente ha scelto un'immagine dal dispositivo (localPosterUri),
+    //la copio in una cartella sicura (documentDirectory)
     let percorsoFinalePoster = form.poster_path;
     if (localPosterUri) {
       percorsoFinalePoster = await copiaImmagineLocale(localPosterUri);
     }
 
     try {
+      //leggo le serie già salvate se non ce ne sono faccio un array
       const esistentiRaw = await AsyncStorage.getItem("serie.json");
       const esistenti = esistentiRaw ? JSON.parse(esistentiRaw) : [];
 
+      //creazione della nuovaserie
+      //copiuo tutti i campi del form ...form
       let nuovaSerie = {
         ...form,
+        //se è una modifica uso l'id vecchio, altrimenti uno nuovo
         id: isModifica ? id : Date.now().toString(),
         tmdbId: tmdbId ?? null,
+        //per salvare quello locale o il remoto
         poster_path: percorsoFinalePoster,
         stagioniDettagli: stagioniDettagli,
       };
+      //se era preferita, dopo il salvataggio aggiorno anche i preferiti
       const eraPreferita = await isFavorite(nuovaSerie.id);
       let nuovaLista;
 
+      //se è una modifica sostituisco la serie
       if (isModifica) {
+        //ogni elemento s è una serie già salvata
         nuovaLista = esistenti.map((s: any) =>
+          //se l'id della serie corrisponde a quello che modifico, lo stsotuisco con nuova serie
           String(s.id) === String(id) ? nuovaSerie : s
         );
       } else {
+        //non modifico, ma aggiungo nuova serie
+        //verifico se almeno una serie con lo stesso titolo non è già presente (some)
         const giàPresente = esistenti.some(
           (s: any) => s.titolo === nuovaSerie.titolo
         );
+        //errore provo ad inserire una serie già inserita
         if (giàPresente) {
           alert("Questa serie è già presente.");
           return;
         }
+        //se non già presente, mantengo tutte le serie precedenti e aggiungo quella nuova
         nuovaLista = [...esistenti, nuovaSerie];
       }
-
+      //salvo in serie.json la nuova lista sovrascritta
       await AsyncStorage.setItem("serie.json", JSON.stringify(nuovaLista));
+      //sovrascrivo anche la nuova serie preferita
       if (eraPreferita) {
         await saveFavorite(nuovaSerie); // aggiorna i dati salvati
       }
@@ -223,7 +282,9 @@ useEffect(() => {
       // Se è una modifica, non toccare gli episodi
       // Se è una nuova, imposta tutti visti se "Completata"
       if (!params.id) {
+        //se non esiste sto creando una nuova serie
         const episodiVistiTotali: {
+          //inizializzo lo stato degli episodi
           [stagione: string]: { [episodio: number]: boolean };
         } = {};
 

@@ -9,10 +9,6 @@ export default function HomeStackLayout() {
           headerShown: false, // nasconde l’header per la home principale
         }}
       />
-    
-
     </Stack>
-
-    
   );
 }

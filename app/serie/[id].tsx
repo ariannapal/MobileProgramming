@@ -213,6 +213,10 @@ export default function SerieDettaglioScreen() {
             );
             console.log("Serie rimossa da serie.json");
 
+            // ✅ Elimina i dati degli episodi salvati
+            await AsyncStorage.removeItem(`episodiVisti-${serie.id}`);
+            console.log("Dati episodi rimossi");
+
             await removeFavorite(serie.id);
             console.log("Serie rimossa dai preferiti");
 
@@ -269,7 +273,7 @@ export default function SerieDettaglioScreen() {
               <Ionicons name="chevron-back" size={24} color="#fff" />
               <Text style={styles.backText}>Indietro</Text>
             </Pressable>
-
+        {serie.stato !== "suggerita" && (
             <Pressable
               onPress={() => {
                 router.push({
@@ -290,6 +294,8 @@ export default function SerieDettaglioScreen() {
             >
               <Ionicons name="create-outline" size={24} color="#fff" />
             </Pressable>
+
+            )}
           </View>
 
           <Image
@@ -309,23 +315,22 @@ export default function SerieDettaglioScreen() {
             </TouchableOpacity>
           </View>
 
+          <Text style={styles.meta}>
+            {serie.anno}
+            {serie.stato !== "suggerita" && (
+              <>
+                {" · "}
+                <Text
+                  style={{
+                    color: serie.stato === "Completata" ? "lightgreen" : "#aaa",
+                  }}
+                >
+                  {serie.stato === "Completata" ? "Completata" : "In corso"}
+                </Text>
+              </>
+            )}
+          </Text>
 
-<Text style={styles.meta}>
-  {serie.anno}
-  {serie.stato !== "suggerita" && (
-    <>
-      {" · "}
-      <Text
-        style={{
-          color: serie.stato === "Completata" ? "lightgreen" : "#aaa",
-        }}
-      >
-        {serie.stato === "Completata" ? "Completata" : "In corso"}
-      </Text>
-    </>
-  )}
-</Text>
-        
           <View style={{ marginVertical: 10 }}>
             <View
               style={{

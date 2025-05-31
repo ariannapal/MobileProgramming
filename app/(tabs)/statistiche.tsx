@@ -1,5 +1,7 @@
+import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import React, { useEffect, useState } from "react";
+import { useFocusEffect } from "@react-navigation/native";
+import React, { useCallback, useState } from "react";
 import { Dimensions, ScrollView, StyleSheet, Text, View } from "react-native";
 import { PieChart } from "react-native-chart-kit";
 
@@ -8,29 +10,48 @@ const screenWidth = Dimensions.get("window").width;
 const StatisticheScreen = () => {
   const [statistiche, setStatistiche] = useState<any>(null);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const serieData = await AsyncStorage.getItem("serie.json");
-        if (serieData !== null) {
+  useFocusEffect(
+    useCallback(() => {
+      const fetchData = async () => {
+        try {
+          const serieData = await AsyncStorage.getItem("serie.json");
+
+          if (!serieData) {
+            setStatistiche({
+              totaliSeguite: 0,
+              completate: 0,
+              inCorso: 0,
+              mediaSettimana: 0,
+              mediaMese: 0,
+              distribuzioneGenere: {},
+              distribuzionePiattaforma: {},
+              topSerie: [],
+            });
+            return;
+          }
+
           const parsed = JSON.parse(serieData);
 
-          const totaliSeguite = parsed.filter(
+          for (const serie of parsed) {
+            const key = `episodiVisti-${serie.id}`;
+            const raw = await AsyncStorage.getItem(key);
+            const dati = raw ? JSON.parse(raw) : {};
+            const totaleVisti = Object.values(dati)
+              .map((ep: any) => Object.values(ep).filter(Boolean).length)
+              .reduce((sum, val) => sum + val, 0);
+            serie.episodiVisti = totaleVisti;
+          }
+
+          const serieValide = parsed.filter(
             (serie: any) =>
-              serie.stato === "Completata" || serie.stato === "In corso"
-          ).length;
-
-          const completate = parsed.filter(
-            (serie: any) => serie.stato === "Completata"
-          ).length;
-
-          const inCorso = parsed.filter(
-            (serie: any) => serie.stato === "In corso"
-          ).length;
+              typeof serie.titolo === "string" &&
+              typeof serie.stato === "string" &&
+              serie.stato.toLowerCase() !== "suggerita"
+          );
 
           let totaleEpisodiVisti = 0;
           let settimaneTotali = 0;
-          parsed.forEach((serie: any) => {
+          serieValide.forEach((serie: any) => {
             if (serie.episodiVisti && serie.durataSettimane) {
               totaleEpisodiVisti += serie.episodiVisti;
               settimaneTotali += serie.durataSettimane;
@@ -41,13 +62,16 @@ const StatisticheScreen = () => {
             settimaneTotali > 0 ? totaleEpisodiVisti / settimaneTotali : 0;
           const mediaMese = mediaSettimana * 4;
 
-          const distribuzioneGenere = parsed.reduce((acc: any, serie: any) => {
-            const genere = serie.genere || "Non specificato";
-            acc[genere] = (acc[genere] || 0) + 1;
-            return acc;
-          }, {});
+          const distribuzioneGenere = serieValide.reduce(
+            (acc: any, serie: any) => {
+              const genere = serie.genere || "Non specificato";
+              acc[genere] = (acc[genere] || 0) + 1;
+              return acc;
+            },
+            {}
+          );
 
-          const distribuzionePiattaforma = parsed.reduce(
+          const distribuzionePiattaforma = serieValide.reduce(
             (acc: any, serie: any) => {
               const piattaforma = serie.piattaforma || "Non specificato";
               acc[piattaforma] = (acc[piattaforma] || 0) + 1;
@@ -55,19 +79,21 @@ const StatisticheScreen = () => {
             },
             {}
           );
-          // Carica episodiVisti da ogni serie
-          for (const serie of parsed) {
-            const key = `episodiVisti-${serie.id}`;
-            const raw = await AsyncStorage.getItem(key);
-            const dati = raw ? JSON.parse(raw) : {};
-            const totaleVisti = Object.values(dati)
-              .map((ep: any) => Object.values(ep).filter(Boolean).length)
-              .reduce((sum, val) => sum + val, 0);
 
-            serie.episodiVisti = totaleVisti;
-          }
+          const totaliSeguite = serieValide.filter(
+            (serie: any) =>
+              serie.stato === "Completata" || serie.stato === "In corso"
+          ).length;
 
-          const topSerie = parsed
+          const completate = serieValide.filter(
+            (serie: any) => serie.stato === "Completata"
+          ).length;
+
+          const inCorso = serieValide.filter(
+            (serie: any) => serie.stato === "In corso"
+          ).length;
+
+          const topSerie = serieValide
             .filter(
               (s: any) =>
                 typeof s.episodiVisti === "number" && s.episodiVisti > 0
@@ -75,7 +101,7 @@ const StatisticheScreen = () => {
             .sort((a: any, b: any) => b.episodiVisti - a.episodiVisti)
             .slice(0, 5);
 
-          const progressiSerie = parsed
+          const progressiSerie = serieValide
             .map((serie: any) => {
               if (serie.episodiVisti && serie.episodiTotali) {
                 return {
@@ -100,23 +126,34 @@ const StatisticheScreen = () => {
             distribuzionePiattaforma,
             topSerie,
           });
+        } catch (error) {
+          console.error(
+            "Errore nel recupero delle serie da AsyncStorage",
+            error
+          );
         }
-      } catch (error) {
-        console.error("Errore nel recupero delle serie da AsyncStorage", error);
-      }
-    };
+      };
 
-    fetchData();
-  }, []);
+      fetchData();
+    }, [])
+  );
 
   if (!statistiche) {
     return <Text style={styles.loadingText}>Caricamento...</Text>;
   }
+  const ChartPlaceholder = ({ label }: { label: string }) => (
+    <View style={{ alignItems: "center", marginTop: 20 }}>
+      <Ionicons name="pie-chart-outline" size={50} color="#555" />
+      <Text style={[styles.statText, { marginTop: 10, textAlign: "center" }]}>
+        Nessun dato disponibile
+      </Text>
+    </View>
+  );
 
   return (
     <ScrollView style={styles.container}>
       <View style={styles.statSection}>
-        <Text style={styles.header}>Schermata analisi</Text>
+        <Text style={styles.header}>Report delle Tue Serie</Text>
         <Text style={styles.statText}>
           Serie seguite: {statistiche.totaliSeguite}
         </Text>
@@ -125,35 +162,8 @@ const StatisticheScreen = () => {
         </Text>
         <Text style={styles.statText}>In Corso: {statistiche.inCorso}</Text>
       </View>
-
-      <View style={styles.chartSection}>
-        <Text style={styles.title}>Distribuzione per Genere</Text>
-        <PieChart
-          data={getPieData(statistiche.distribuzioneGenere)}
-          width={screenWidth - 10}
-          height={220}
-          chartConfig={chartConfig}
-          accessor="population"
-          backgroundColor="transparent"
-          paddingLeft="10"
-        />
-      </View>
-
-      <View style={styles.chartSection}>
-        <Text style={styles.title}>Distribuzione per Piattaforma</Text>
-        <PieChart
-          data={getPieData(statistiche.distribuzionePiattaforma)}
-          width={screenWidth - 10}
-          height={220}
-          chartConfig={chartConfig}
-          accessor="population"
-          backgroundColor="transparent"
-          paddingLeft="10"
-        />
-      </View>
-
       <View style={styles.statSection}>
-        <Text style={styles.title}>Top 5 serie (episodi visti)</Text>
+        <Text style={styles.title}>Top 5 serie</Text>
         {statistiche.topSerie.length > 0 ? (
           statistiche.topSerie.map((serie: any, i: number) => (
             <Text key={i} style={styles.statText}>
@@ -161,7 +171,42 @@ const StatisticheScreen = () => {
             </Text>
           ))
         ) : (
-          <Text style={styles.statText}>Nessun dato disponibile.</Text>
+          <Text style={styles.statText}>Nessun dato disponibile</Text>
+        )}
+      </View>
+
+      <View style={styles.chartSection}>
+        <Text style={styles.title}>Distribuzione per Genere</Text>
+
+        {Object.keys(statistiche.distribuzioneGenere).length > 0 ? (
+          <PieChart
+            data={getPieData(statistiche.distribuzioneGenere)}
+            width={screenWidth - 10}
+            height={220}
+            chartConfig={chartConfig}
+            accessor="population"
+            backgroundColor="transparent"
+            paddingLeft="10"
+          />
+        ) : (
+          <ChartPlaceholder label="Genere" />
+        )}
+      </View>
+
+      <View style={styles.chartSection}>
+        <Text style={styles.title}>Distribuzione per Piattaforma</Text>
+        {Object.keys(statistiche.distribuzionePiattaforma).length > 0 ? (
+          <PieChart
+            data={getPieData(statistiche.distribuzionePiattaforma)}
+            width={screenWidth - 10}
+            height={220}
+            chartConfig={chartConfig}
+            accessor="population"
+            backgroundColor="transparent"
+            paddingLeft="10"
+          />
+        ) : (
+          <ChartPlaceholder label="Piattaforma" />
         )}
       </View>
     </ScrollView>

@@ -64,6 +64,16 @@ export default function HomeScreen() {
     return item.image || "https://via.placeholder.com/120x180?text=?";
   }
 
+  const renderEmptyState = (message: string) => (
+  <TouchableOpacity
+    style={styles.addButtonCard}
+    onPress={() => router.push("/aggiungi")}
+  >
+    <Ionicons name="add-circle" size={50} color="#aaa" />
+    <Text style={styles.addButtonText}>{message}</Text>
+  </TouchableOpacity>
+);
+
   useFocusEffect(
     useCallback(() => {
       const loadSerie = async () => {
@@ -283,7 +293,6 @@ export default function HomeScreen() {
               JSON.stringify(nuovaLista)
             );
           }
-
           router.push(`/serie/${encodeURIComponent(item.id || item.titolo)}`);
         }}
       >
@@ -316,23 +325,29 @@ export default function HomeScreen() {
 
       <ScrollView showsVerticalScrollIndicator={false}>
         <Text style={styles.sectionTitle}>Serie TV In Corso</Text>
-        <FlatList
-          data={[...serieViste].reverse()}
-          keyExtractor={(item, index) => item.id || item.titolo + index}
-          horizontal
-          renderItem={renderItem}
-          contentContainerStyle={styles.horizontalList}
-          showsHorizontalScrollIndicator={false}
-        />
-        <Text style={styles.sectionTitle}>Serie TV Completate</Text>
-        <FlatList
-          data={[...serieCompletate].reverse()}
-          keyExtractor={(item, index) => item.id || item.titolo + index}
-          horizontal
-          renderItem={renderItem}
-          contentContainerStyle={styles.horizontalList}
-          showsHorizontalScrollIndicator={false}
-        />
+        
+        
+      <FlatList
+  data={[...serieViste].reverse()}
+  keyExtractor={(item, index) => item.id || item.titolo + index}
+  horizontal
+  renderItem={renderItem}
+  contentContainerStyle={styles.horizontalList}
+  showsHorizontalScrollIndicator={false}
+  ListEmptyComponent={renderEmptyState("Aggiungi una serie in corso")}
+/>
+
+  <Text style={styles.sectionTitle}>Serie TV Completate</Text>
+<FlatList
+  data={[...serieCompletate].reverse()}
+  keyExtractor={(item, index) => item.id || item.titolo + index}
+  horizontal
+  renderItem={renderItem}
+  contentContainerStyle={styles.horizontalList}
+  showsHorizontalScrollIndicator={false}
+  ListEmptyComponent={renderEmptyState("Aggiungi una serie completata")}
+/>
+
         <Text style={styles.sectionTitle}>Suggeriti per te</Text>
         <FlatList
           data={suggestedSeries}

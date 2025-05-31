@@ -225,7 +225,7 @@ export default function HomeScreen() {
         titolo: dettagli.dettagliRaw.name,
         trama: dettagli.dettagliRaw.overview,
         genere: dettagli.dettagliRaw.genres?.[0]?.name || "",
-        piattaforma: "TMDb",
+        piattaforma: "Netflix",
         stato: "suggerita",
         stagioni: dettagli.numeroStagioni,
         episodi: dettagli.numeroEpisodiTotale,

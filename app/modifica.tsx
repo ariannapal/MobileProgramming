@@ -115,16 +115,15 @@ export default function ModificaScreen() {
         return;
       }
 
-    
       //data.seasons è un array di stagioni provenienti dalla risposta di TMDb.
       //Ogni s rappresenta una stagione
-        const episodiPerStagione = data.seasons
-  .filter((s: any) => s.season_number !== 0)
-  .map((s: any) => ({
-    stagione: s.season_number,
-    episodi: s.episode_count,
-  }));
-   
+      const episodiPerStagione = data.seasons
+        .filter((s: any) => s.season_number !== 0)
+        .map((s: any) => ({
+          stagione: s.season_number,
+          episodi: s.episode_count,
+        }));
+
       episodiPerStagione.forEach(
         (stagione: { stagione: number; episodi: number }) => {
           console.log(
@@ -287,7 +286,7 @@ export default function ModificaScreen() {
 
       // Se è una modifica, non toccare gli episodi
       // Se è una nuova, imposta tutti visti se "Completata"
-      if (!params.id) {
+      if (!params.id || form.stato === "Completata") {
         //se non esiste sto creando una nuova serie
         const episodiVistiTotali: {
           //inizializzo lo stato degli episodi

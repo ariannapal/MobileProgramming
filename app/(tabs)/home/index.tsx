@@ -132,17 +132,20 @@ export default function HomeScreen() {
       const data = await res.json();
 
       // Mappa ogni stagione con numero e conteggio episodi
-      const episodiPerStagione = data.seasons.map((s: any) => ({
-        stagione: s.season_number,
-        episodi: s.episode_count,
-      }));
+     const episodiPerStagione = data.seasons
+  .filter((s: any) => s.season_number !== 0)
+  .map((s: any) => ({
+    stagione: s.season_number,
+    episodi: s.episode_count,
+  }));
 
-      return {
-        numeroStagioni: data.number_of_seasons,
-        numeroEpisodiTotale: data.number_of_episodes,
-        episodiPerStagione,
-        dettagliRaw: data,
-      };
+    
+     return {
+  numeroStagioni: data.number_of_seasons,
+  numeroEpisodiTotale: data.number_of_episodes,
+  episodiPerStagione,
+  dettagliRaw: data,
+};
     } catch (err) {
       console.error("Errore dettagli serie:", err);
       return null;

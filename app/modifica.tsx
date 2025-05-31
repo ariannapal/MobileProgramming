@@ -23,6 +23,7 @@ export default function ModificaScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const id = Array.isArray(params.id) ? params.id[0] : params.id;
+  const [episodiInput, setEpisodiInput] = useState<string[]>([]);
 
   const tmdbId = Array.isArray(params.tmdbId)
     ? params.tmdbId[0]
@@ -146,6 +147,11 @@ export default function ModificaScreen() {
       fetchDettagliSerie(idNumerico);
     }
   }, []);
+
+  //quando cambia setto stagioni dettagli
+  useEffect(() => {
+    setEpisodiInput(stagioniDettagli.map((s) => s.episodi.toString()));
+  }, [stagioniDettagli]);
 
   //Carica le categorie da AsyncStorage per dropdown
   useEffect(() => {
@@ -465,17 +471,23 @@ export default function ModificaScreen() {
                 placeholder="Episodi"
                 placeholderTextColor="#777"
                 keyboardType="numeric"
-                value={stagione.episodi.toString()}
+                value={episodiInput[index]}
                 onChangeText={(v) => {
-                  const nuovi = [...stagioniDettagli];
-                  nuovi[index].episodi = parseInt(v) || 0;
-                  setStagioniDettagli(nuovi);
+                  const nuovaInput = [...episodiInput];
+                  nuovaInput[index] = v;
+                  setEpisodiInput(nuovaInput);
 
-                  aggiornaCampo(
-                    "episodi",
-                    nuovi.reduce((sum, s) => sum + s.episodi, 0).toString()
-                  );
-                  aggiornaCampo("stagioni", nuovi.length.toString());
+                  const nuovoValore = parseInt(v);
+                  if (!isNaN(nuovoValore)) {
+                    const nuovi = [...stagioniDettagli];
+                    nuovi[index].episodi = nuovoValore;
+                    setStagioniDettagli(nuovi);
+
+                    aggiornaCampo(
+                      "episodi",
+                      nuovi.reduce((sum, s) => sum + s.episodi, 0).toString()
+                    );
+                  }
                 }}
               />
             </View>

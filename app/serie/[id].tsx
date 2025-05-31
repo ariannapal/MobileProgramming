@@ -28,6 +28,7 @@ import {
 import SeasonPicker from "./SeasonPicker"; // adatta il path se necessario
 
 export default function SerieDettaglioScreen() {
+  //ciaoooo loeg
   const [imageBase64, setImageBase64] = useState<string | null>(null);
   const [isFav, setIsFav] = useState(false);
   const { id } = useLocalSearchParams();
@@ -273,28 +274,27 @@ export default function SerieDettaglioScreen() {
               <Ionicons name="chevron-back" size={24} color="#fff" />
               <Text style={styles.backText}>Indietro</Text>
             </Pressable>
-        {serie.stato !== "suggerita" && (
-            <Pressable
-              onPress={() => {
-                router.push({
-                  pathname: "/modifica",
-                  params: {
-                    id: serie.id,
-                    titolo: serie.titolo,
-                    overview: serie.trama,
-                    genere: serie.genere,
-                    piattaforma: serie.piattaforma,
-                    poster_path: serie.poster_path,
-                    rating: serie.rating,
-                    anno: serie.anno,
-                  },
-                });
-              }}
-              style={{ paddingHorizontal: 4 }}
-            >
-              <Ionicons name="create-outline" size={24} color="#fff" />
-            </Pressable>
-
+            {serie.stato !== "suggerita" && (
+              <Pressable
+                onPress={() => {
+                  router.push({
+                    pathname: "/modifica",
+                    params: {
+                      id: serie.id,
+                      titolo: serie.titolo,
+                      overview: serie.trama,
+                      genere: serie.genere,
+                      piattaforma: serie.piattaforma,
+                      poster_path: serie.poster_path,
+                      rating: serie.rating,
+                      anno: serie.anno,
+                    },
+                  });
+                }}
+                style={{ paddingHorizontal: 4 }}
+              >
+                <Ionicons name="create-outline" size={24} color="#fff" />
+              </Pressable>
             )}
           </View>
 

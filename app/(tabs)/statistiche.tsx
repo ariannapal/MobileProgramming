@@ -144,21 +144,6 @@ const mediaMese = totaleEpisodiVisti / mesiTotali;
             .sort((a: any, b: any) => b.episodiVisti - a.episodiVisti)
             .slice(0, 5);
 
-          const progressiSerie = serieValide
-            .map((serie: any) => {
-              if (serie.episodiVisti && serie.episodiTotali) {
-                return {
-                  titolo: serie.titolo,
-                  completamento: Math.min(
-                    100,
-                    Math.round((serie.episodiVisti / serie.episodiTotali) * 100)
-                  ),
-                };
-              }
-              return null;
-            })
-            .filter((x: any) => x !== null);
-
           setStatistiche({
             totaliSeguite,
             completate,
@@ -192,20 +177,14 @@ const mediaMese = totaleEpisodiVisti / mesiTotali;
       </Text>
     </View>
   );
-  if (!statistiche) {
-    return (
-      <View style={styles.container}>
-        <Text style={styles.loadingText}>Caricamento statistiche...</Text>
-      </View>
-    );
-  }  
+  
   return (
 
     <ScrollView style={styles.container}> 
 
       <Text style={styles.sectionIntro}>
       Ecco un riepilogo delle tue serie
-</Text>
+      </Text>
       <View style={styles.row}>
   <View style={styles.cardMini}>
     <Text style={styles.cardMiniTitle}>Serie Completate</Text>
@@ -264,7 +243,9 @@ const mediaMese = totaleEpisodiVisti / mesiTotali;
     <ChartPlaceholder label="Genere" />
   )}
 </View>
+
 <View style={{ height: 1, backgroundColor: "#333", marginVertical: 20 }} />
+
 <View style={styles.statSection}>
   <Text style={styles.title}>Le Tue Piattaforme Preferite</Text>
   {Object.keys(statistiche.distribuzionePiattaforma).length > 0 ? (
@@ -466,17 +447,7 @@ mediaSectionCard: {
   shadowRadius: 10,
   elevation: 7,
 },
-
-
 });
-
-const stableColor = (label: string) => {
-  const hash = label
-    .split("")
-    .reduce((acc, char) => acc + char.charCodeAt(0), 0);
-  const hue = hash % 360;
-  return `hsl(${hue}, 70%, 50%)`;
-};
 
 const getPieData = (source: Record<string, number>) => {
   const total = Object.values(source).reduce((sum, val) => sum + val, 0);
@@ -491,13 +462,13 @@ const getPieData = (source: Record<string, number>) => {
 };
 
 const colorPalette = [
-  "#f39ac7", // rosa acceso (accanto al testo rosa)
-  "#9b59b6", // viola
-  "#2980b9", // blu
-  "#8e44ad", // viola scuro
-  "#34495e", // blu grigio scuro
-  "#c39bd3", // lilla chiaro
-  "#d7bde2", // lilla pastello
+  "#ff6f91", // rosa corallo acceso (caldo e moderno)
+  "#6a5acd", // blu viola (slate blue)
+  "#1abc9c", // tiffany/turquoise (fresco e luminoso)
+  "#34495e", // blu grigio scuro (stesso della tua attuale, per bilanciare)
+  "#e67e22", // arancio brillante (caldo e vivace)
+  "#bdc3c7", // grigio chiaro (pastello, neutro)
+  "#ecf0f1", // bianco sporco per accenti luminosi
 ];
 
 

@@ -28,7 +28,7 @@ import {
 import SeasonPicker from "./SeasonPicker"; // adatta il path se necessario
 
 export default function SerieDettaglioScreen() {
-  //ciaoooo loeg
+  //
   const [imageBase64, setImageBase64] = useState<string | null>(null);
   const [isFav, setIsFav] = useState(false);
   const { id } = useLocalSearchParams();
@@ -214,7 +214,7 @@ export default function SerieDettaglioScreen() {
             );
             console.log("Serie rimossa da serie.json");
 
-            // ✅ Elimina i dati degli episodi salvati
+            // Elimina i dati degli episodi salvati
             await AsyncStorage.removeItem(`episodiVisti-${serie.id}`);
             console.log("Dati episodi rimossi");
 
@@ -418,7 +418,7 @@ export default function SerieDettaglioScreen() {
                  anno: nuovaSerie.anno,
                  stato: nuovaSerie.stato,
                  stagioni: JSON.stringify(nuovaSerie.stagioniDettagli ?? []), // se stagioniDettagli è un array, passa stringificato
-                 episodi: "" // se vuoi puoi gestire gli episodi qui o nella pagina di modifica
+                 episodi: "" //  gestire gli episodi qui o nella pagina di modifica
                },
              });
            }}

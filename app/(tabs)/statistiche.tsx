@@ -7,6 +7,7 @@ import { PieChart } from "react-native-chart-kit";
 
 const screenWidth = Dimensions.get("window").width;
 
+
 const StatisticheScreen = () => {
   const [statistiche, setStatistiche] = useState<any>(null);
 
@@ -192,73 +193,96 @@ const mediaMese = totaleEpisodiVisti / mesiTotali;
 
   return (
     <ScrollView style={styles.container}>
-      <View style={styles.statSection}>
-        <Text style={styles.header}>Report delle Tue Serie</Text>
-        <Text style={styles.statText}>
-          Serie seguite: {statistiche.totaliSeguite}
-        </Text>
-        <Text style={styles.statText}>
-          Completate: {statistiche.completate}
-        </Text>
-        <Text style={styles.statText}>In Corso: {statistiche.inCorso}</Text>
-      </View>
-      <View style={styles.statSection}>
-        <Text style={styles.title}>Top 5 serie</Text>
-        {statistiche.topSerie.length > 0 ? (
-          statistiche.topSerie.map((serie: any, i: number) => (
-            <Text key={i} style={styles.statText}>
-              {i + 1}. {serie.titolo} — {serie.episodiVisti} episodi
-            </Text>
-          ))
-        ) : (
-          <Text style={styles.statText}>Nessun dato disponibile</Text>
-        )}
-      </View>
-
-      <View style={styles.chartSection}>
-        <Text style={styles.title}>Distribuzione per Genere</Text>
-
-        {Object.keys(statistiche.distribuzioneGenere).length > 0 ? (
-          <PieChart
-            data={getPieData(statistiche.distribuzioneGenere)}
-            width={screenWidth - 10}
-            height={220}
-            chartConfig={chartConfig}
-            accessor="population"
-            backgroundColor="transparent"
-            paddingLeft="10"
-          />
-        ) : (
-          <ChartPlaceholder label="Genere" />
-        )}
-      </View>
-
-      <View style={styles.chartSection}>
-        <Text style={styles.title}>Distribuzione per Piattaforma</Text>
-        {Object.keys(statistiche.distribuzionePiattaforma).length > 0 ? (
-          <PieChart
-            data={getPieData(statistiche.distribuzionePiattaforma)}
-            width={screenWidth - 10}
-            height={220}
-            chartConfig={chartConfig}
-            accessor="population"
-            backgroundColor="transparent"
-            paddingLeft="10"
-          />
-        ) : (
-          <ChartPlaceholder label="Piattaforma" />
-        )}
-      </View>
-
-      <View style={styles.statSection}>
-  <Text style={styles.title}>Media Episodi</Text>
-  <Text style={styles.statText}>
-    Media episodi visti a settimana: {statistiche.mediaSettimana.toFixed(2)}
-  </Text>
-  <Text style={styles.statText}>
-    Media episodi visti al mese (stimata): {statistiche.mediaMese.toFixed(2)}
-  </Text>
+      <Text style={styles.sectionIntro}>
+      Ecco un riepilogo delle tue serie
+</Text>
+      <View style={styles.row}>
+  <View style={styles.cardMini}>
+    <Text style={styles.cardMiniTitle}>Serie Completate</Text>
+    <Text style={styles.cardMiniValue}>{statistiche.completate}</Text>
+  </View>
+  <View style={styles.cardMini}>
+    <Text style={styles.cardMiniTitle}>Serie In Corso</Text>
+    <Text style={styles.cardMiniValue}>{statistiche.inCorso}</Text>
+  </View>
 </View>
+<View style={{ height: 1, backgroundColor: "#333", marginVertical: 20 }} />
+<View style={styles.statSection}>
+  <Text style={styles.title}>Le Tue Serie Preferite</Text>
+  {statistiche.topSerie.length > 0 ? (
+    statistiche.topSerie.map((serie: any, i: number) => {
+      const completamento = serie.episodiTotali
+        ? Math.min(1, serie.episodiVisti / serie.episodiTotali)
+        : 0;
+      return (
+        <View key={serie.id || i} style={styles.topSerieCard}>
+          <View style={styles.topSerieHeader}>
+            <Text style={styles.topSerieIndex}>{i + 1}</Text>
+            <Text style={styles.topSerieTitle}>{serie.titolo}</Text>
+          </View>
+          <Text style={styles.topSerieEpisodes}>
+            Episodi visti: {serie.episodiVisti}
+          </Text>
+        </View>
+      );
+    })
+  ) : (
+    <Text style={styles.statText}>Nessun dato disponibile</Text>
+  )}
+</View>
+<View style={{ height: 1, backgroundColor: "#333", marginVertical: 20 }} />
+<View style={styles.statSection}>
+  <Text style={styles.title}>I Tuoi Generi Preferiti</Text>
+  {Object.keys(statistiche.distribuzioneGenere).length > 0 ? (
+    <PieChart
+      data={getPieData(statistiche.distribuzioneGenere)}
+      width={screenWidth - 50}
+      height={220}
+      chartConfig={chartConfig}
+      accessor="population"
+      backgroundColor="transparent"
+      paddingLeft="15"
+    />
+  ) : (
+    <ChartPlaceholder label="Genere" />
+  )}
+</View>
+<View style={{ height: 1, backgroundColor: "#333", marginVertical: 20 }} />
+<View style={styles.statSection}>
+  <Text style={styles.title}>Le Tue Piattaforme Preferite</Text>
+  {Object.keys(statistiche.distribuzionePiattaforma).length > 0 ? (
+    <PieChart
+      data={getPieData(statistiche.distribuzionePiattaforma)}
+      width={screenWidth - 50}
+      height={220}
+      chartConfig={chartConfig}
+      accessor="population"
+      backgroundColor="transparent"
+      paddingLeft="15"
+    />
+  ) : (
+    <ChartPlaceholder label="Piattaforma" />
+  )}
+</View>
+      <View style={{ height: 1, backgroundColor: "#333", marginVertical: 20 }} />
+
+      <View style={{ flexDirection: "column", paddingHorizontal: 10, marginVertical: 20 }}>
+  <Text style={styles.title}>Quanti Episodi Guardi in Media?</Text>
+  <View style={styles.mediaContainer}>
+    <View style={styles.mediaCard}>
+      <Ionicons name="calendar-outline" size={30} color="#d7bde2" />
+      <Text style={styles.mediaLabel}>Media settimanale</Text>
+      <Text style={styles.mediaValue}>{statistiche.mediaSettimana.toFixed(2)}</Text>
+    </View>
+    <View style={styles.mediaCard}>
+      <Ionicons name="calendar-number-outline" size={30} color="#d7bde2" />
+      <Text style={styles.mediaLabel}>Media mensile</Text>
+      <Text style={styles.mediaValue}>{statistiche.mediaMese.toFixed(2)}</Text>
+    </View>
+  </View>
+</View>
+
+
 
     </ScrollView>
   );
@@ -286,8 +310,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#0f0f2a",
-    padding: 20,
-  },
+    paddingHorizontal: 16,
+    paddingTop: 20,
+    paddingBottom: 30,
+  },  
   header: {
     fontSize: 22,
     fontWeight: "bold",
@@ -295,10 +321,10 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   title: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: "bold",
     color: "#fff",
-    marginBottom: 10,
+    marginBottom: 10,  // abbassa tutto sotto il titolo
   },
   statSection: {
     marginVertical: 15,
@@ -315,6 +341,107 @@ const styles = StyleSheet.create({
     marginVertical: 20,
     alignItems: "center",
   },
+  cardMini: {
+    flex: 1,
+    backgroundColor: "#2a2a4c",
+    margin: 5,
+    padding: 15,
+    borderRadius: 10,
+    alignItems: "center",
+  },
+  cardMiniTitle: {
+    color: "#ccc",
+    fontSize: 14,
+    marginBottom: 5,
+  },
+  cardMiniValue: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#f39ac7",
+  },
+  row: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 20,
+  },  
+  sectionIntro: {
+    color: "#ffffff",
+    fontSize: 22,
+    fontWeight: "bold",
+    textAlign: "center",
+    marginBottom: 24,
+    paddingHorizontal: 10,   // meno padding orizzontale
+    width: '100%',            // occuperà tutta la larghezza disponibile
+  },
+
+  topSerieCard: {
+  backgroundColor: '#2a2a4c',
+  padding: 15,
+  marginVertical: 8,
+  borderRadius: 12,
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.4,
+  shadowRadius: 5,
+  elevation: 5,
+},
+topSerieHeader: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  marginBottom: 6,
+},
+topSerieIndex: {
+  fontSize: 22,
+  fontWeight: 'bold',
+  color: '#f39ac7',
+  marginRight: 10,
+  width: 30,
+  textAlign: 'center',
+},
+topSerieTitle: {
+  fontSize: 18,
+  fontWeight: 'bold',
+  color: '#fff',
+  flexShrink: 1,
+},
+topSerieEpisodes: {
+  fontSize: 14,
+  color: '#ccc',
+  marginBottom: 6,
+},
+mediaContainer: {
+  flexDirection: "row",
+  justifyContent: "space-between",
+  marginVertical: 20,
+  paddingHorizontal: 10,
+  paddingBottom: 30,
+},
+mediaCard: {
+  flex: 1,
+  backgroundColor: "#2a2a4c",
+  marginHorizontal: 5,
+  paddingVertical: 20,
+  borderRadius: 20,
+  alignItems: "center",
+  shadowColor: "#000",
+  shadowOffset: { width: 0, height: 6 },
+  shadowOpacity: 0.25,
+  shadowRadius: 10,
+  elevation: 7,
+},
+mediaLabel: {
+  color: "#d7bde2",
+  fontSize: 16,
+  fontWeight: "600",
+  marginTop: 5,
+},
+mediaValue: {
+  fontSize: 20,
+  fontWeight: "bold",
+  color: "#fff",
+  marginTop: 5,
+},
+
 });
 
 const stableColor = (label: string) => {
@@ -327,14 +454,24 @@ const stableColor = (label: string) => {
 
 const getPieData = (source: Record<string, number>) => {
   const total = Object.values(source).reduce((sum, val) => sum + val, 0);
-  return Object.entries(source).map(([label, count]) => ({
+  const labels = Object.keys(source);
+  return labels.map((label, i) => ({
     name: label.length > 20 ? label.slice(0, 17) + "..." : label,
-
-    population: count,
-    color: stableColor(label),
+    population: source[label],
+    color: colorPalette[i % colorPalette.length],
     legendFontColor: "#ccc",
     legendFontSize: 12,
   }));
 };
+
+const colorPalette = [
+  "#f39ac7", // rosa acceso (accanto al testo rosa)
+  "#9b59b6", // viola
+  "#2980b9", // blu
+  "#8e44ad", // viola scuro
+  "#34495e", // blu grigio scuro
+  "#c39bd3", // lilla chiaro
+  "#d7bde2", // lilla pastello
+];
 
 export default StatisticheScreen;

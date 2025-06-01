@@ -1,8 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect } from "@react-navigation/native";
+import { useRouter } from "expo-router";
 import React, { useCallback, useState } from "react";
-import { Dimensions, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Dimensions, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { PieChart } from "react-native-chart-kit";
 
 const screenWidth = Dimensions.get("window").width;
@@ -10,6 +11,7 @@ const screenWidth = Dimensions.get("window").width;
 
 const StatisticheScreen = () => {
   const [statistiche, setStatistiche] = useState<any>(null);
+  const router = useRouter();
 
   useFocusEffect(
     useCallback(() => {
@@ -85,7 +87,7 @@ for (const serie of serieValide) {
 
 const adesso = new Date();
 const diffMs = adesso.getTime() - dataInizioPiuVecchia.getTime();
-const giorniTotali = Math.max(1, Math.ceil(diffMs / (24 * 60 * 60 * 1000)));
+// const giorniTotali = Math.max(1, Math.ceil(diffMs / (24 * 60 * 60 * 1000)));
 const settimaneTotali = Math.max(1, Math.ceil(diffMs / (7 * 24 * 60 * 60 * 1000)));
 
 const mediaSettimana = totaleEpisodiVisti / settimaneTotali;
@@ -190,9 +192,17 @@ const mediaMese = totaleEpisodiVisti / mesiTotali;
       </Text>
     </View>
   );
-
+  if (!statistiche) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.loadingText}>Caricamento statistiche...</Text>
+      </View>
+    );
+  }  
   return (
-    <ScrollView style={styles.container}>
+
+    <ScrollView style={styles.container}> 
+
       <Text style={styles.sectionIntro}>
       Ecco un riepilogo delle tue serie
 </Text>
@@ -207,15 +217,18 @@ const mediaMese = totaleEpisodiVisti / mesiTotali;
   </View>
 </View>
 <View style={{ height: 1, backgroundColor: "#333", marginVertical: 20 }} />
+
 <View style={styles.statSection}>
   <Text style={styles.title}>Le Tue Serie Preferite</Text>
+
   {statistiche.topSerie.length > 0 ? (
-    statistiche.topSerie.map((serie: any, i: number) => {
-      const completamento = serie.episodiTotali
-        ? Math.min(1, serie.episodiVisti / serie.episodiTotali)
-        : 0;
-      return (
-        <View key={serie.id || i} style={styles.topSerieCard}>
+  statistiche.topSerie.map((serie: any, i: number) => {
+    return (
+      <TouchableOpacity
+        key={serie.id}
+        onPress={() => router.push(`/serie/${serie.id}`)}
+      >
+        <View style={styles.topSerieCard}>  
           <View style={styles.topSerieHeader}>
             <Text style={styles.topSerieIndex}>{i + 1}</Text>
             <Text style={styles.topSerieTitle}>{serie.titolo}</Text>
@@ -224,13 +237,17 @@ const mediaMese = totaleEpisodiVisti / mesiTotali;
             Episodi visti: {serie.episodiVisti}
           </Text>
         </View>
-      );
-    })
-  ) : (
-    <Text style={styles.statText}>Nessun dato disponibile</Text>
-  )}
+      </TouchableOpacity>
+    );
+  })
+) : (
+  <Text style={styles.statText}>Nessun dato disponibile</Text>
+)}
+
 </View>
+
 <View style={{ height: 1, backgroundColor: "#333", marginVertical: 20 }} />
+
 <View style={styles.statSection}>
   <Text style={styles.title}>I Tuoi Generi Preferiti</Text>
   {Object.keys(statistiche.distribuzioneGenere).length > 0 ? (
@@ -264,9 +281,8 @@ const mediaMese = totaleEpisodiVisti / mesiTotali;
     <ChartPlaceholder label="Piattaforma" />
   )}
 </View>
-      <View style={{ height: 1, backgroundColor: "#333", marginVertical: 20 }} />
-
-      <View style={{ flexDirection: "column", paddingHorizontal: 10, marginVertical: 20 }}>
+<View style={{ height: 1, backgroundColor: "#333", marginVertical: 20 }} />
+<View style={styles.mediaSectionCard}>
   <Text style={styles.title}>Quanti Episodi Guardi in Media?</Text>
   <View style={styles.mediaContainer}>
     <View style={styles.mediaCard}>
@@ -280,10 +296,7 @@ const mediaMese = totaleEpisodiVisti / mesiTotali;
       <Text style={styles.mediaValue}>{statistiche.mediaMese.toFixed(2)}</Text>
     </View>
   </View>
-</View>
-
-
-
+</View> 
     </ScrollView>
   );
 };
@@ -409,6 +422,7 @@ topSerieEpisodes: {
   color: '#ccc',
   marginBottom: 6,
 },
+
 mediaContainer: {
   flexDirection: "row",
   justifyContent: "space-between",
@@ -441,6 +455,18 @@ mediaValue: {
   color: "#fff",
   marginTop: 5,
 },
+mediaSectionCard: {
+  backgroundColor: "rgba(42, 42, 76, 0.5)",
+  borderRadius: 20,
+  padding: 15,
+  marginVertical: 20,
+  shadowColor: "#000",
+  shadowOffset: { width: 0, height: 6 },
+  shadowOpacity: 0.25,
+  shadowRadius: 10,
+  elevation: 7,
+},
+
 
 });
 
@@ -473,5 +499,6 @@ const colorPalette = [
   "#c39bd3", // lilla chiaro
   "#d7bde2", // lilla pastello
 ];
+
 
 export default StatisticheScreen;

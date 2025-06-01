@@ -50,17 +50,57 @@ const StatisticheScreen = () => {
           );
 
           let totaleEpisodiVisti = 0;
-          let settimaneTotali = 0;
-          serieValide.forEach((serie: any) => {
-            if (serie.episodiVisti && serie.durataSettimane) {
-              totaleEpisodiVisti += serie.episodiVisti;
-              settimaneTotali += serie.durataSettimane;
-            }
-          });
 
-          const mediaSettimana =
-            settimaneTotali > 0 ? totaleEpisodiVisti / settimaneTotali : 0;
-          const mediaMese = mediaSettimana * 4;
+// Trova la data di inizio più vecchia tra tutte le serie
+let dataInizioPiuVecchia: Date | null = null;
+
+for (const serie of serieValide) {
+  if (serie.dataInizio) {
+    const data = new Date(serie.dataInizio);
+    if (!dataInizioPiuVecchia || data < dataInizioPiuVecchia) {
+      dataInizioPiuVecchia = data;
+    }
+  }
+}
+
+// Se non trovi una data di inizio, metti oggi per evitare divisioni per 0
+if (!dataInizioPiuVecchia) {
+  dataInizioPiuVecchia = new Date();
+}
+
+// Calcola il totale episodi visti su tutte le serie
+for (const serie of serieValide) {
+  const key = `episodiVisti-${serie.id}`;
+  const raw = await AsyncStorage.getItem(key);
+  const dati = raw ? JSON.parse(raw) : {};
+
+  let episodiVistiSerie = 0;
+  for (const stagione in dati) {
+    episodiVistiSerie += Object.values(dati[stagione]).filter(Boolean).length;
+  }
+
+  totaleEpisodiVisti += episodiVistiSerie;
+}
+
+const adesso = new Date();
+const diffMs = adesso.getTime() - dataInizioPiuVecchia.getTime();
+const giorniTotali = Math.max(1, Math.ceil(diffMs / (24 * 60 * 60 * 1000)));
+const settimaneTotali = Math.max(1, Math.ceil(diffMs / (7 * 24 * 60 * 60 * 1000)));
+
+const mediaSettimana = totaleEpisodiVisti / settimaneTotali;
+
+
+const dataInizio = dataInizioPiuVecchia || adesso;
+
+const mesiTotali =
+  Math.max(
+    1,
+    (adesso.getFullYear() - dataInizio.getFullYear()) * 12 +
+      (adesso.getMonth() - dataInizio.getMonth()) +
+      1
+  );
+
+const mediaMese = totaleEpisodiVisti / mesiTotali;
 
           const distribuzioneGenere = serieValide.reduce(
             (acc: any, serie: any) => {
@@ -209,6 +249,17 @@ const StatisticheScreen = () => {
           <ChartPlaceholder label="Piattaforma" />
         )}
       </View>
+
+      <View style={styles.statSection}>
+  <Text style={styles.title}>Media Episodi</Text>
+  <Text style={styles.statText}>
+    Media episodi visti a settimana: {statistiche.mediaSettimana.toFixed(2)}
+  </Text>
+  <Text style={styles.statText}>
+    Media episodi visti al mese (stimata): {statistiche.mediaMese.toFixed(2)}
+  </Text>
+</View>
+
     </ScrollView>
   );
 };

@@ -68,7 +68,7 @@ const CategorieScreen = () => {
             );
           }
 
-          // ✅ Carica le serie
+          // Carica le serie
           const serieSalvate = await AsyncStorage.getItem(SERIE_KEY);
           const parsedSerie = serieSalvate ? JSON.parse(serieSalvate) : [];
 

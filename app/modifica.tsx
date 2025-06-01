@@ -81,7 +81,7 @@ export default function ModificaScreen() {
     trama: params.overview as string,
     genere: params.genere as string,
     piattaforma: (params.piattaforma as string) || "Netflix",
-    stato: "In corso",
+    stato: (params.stato as string) || "In corso",
     stagioni: "",
     episodi: "",
     poster_path:
@@ -190,9 +190,9 @@ export default function ModificaScreen() {
     setForm((prev) => ({ ...prev, [campo]: valore }));
   };
 
-  //se faccio una modifica, devono esserci anche i dettagli della serie
+  //se faccio una modifica, ho un nuovo form
   useEffect(() => {
-    const caricaStagioniInModifica = async () => {
+    const caricaSerieInModifica = async () => {
       if (isModifica && params.id) {
         try {
           const esistentiRaw = await AsyncStorage.getItem("serie.json");
@@ -200,15 +200,33 @@ export default function ModificaScreen() {
           const serie = esistenti.find(
             (s: any) => String(s.id) === String(params.id)
           );
-          if (serie?.stagioniDettagli) {
-            setStagioniDettagli(serie.stagioniDettagli);
+
+          if (serie) {
+            // aggiorna tutto il form con i dati salvati
+            setForm({
+              titolo: serie.titolo || "",
+              trama: serie.trama || "",
+              genere: serie.genere || "",
+              piattaforma: serie.piattaforma || "Netflix",
+              stato: serie.stato || "In corso",
+              stagioni: serie.stagioni || "",
+              episodi: serie.episodi || "",
+              poster_path: serie.poster_path,
+              rating: serie.rating || "",
+              anno: serie.anno || "",
+            });
+
+            if (serie.stagioniDettagli) {
+              setStagioniDettagli(serie.stagioniDettagli);
+            }
           }
         } catch (err) {
-          console.error("Errore nel caricamento stagioni per modifica:", err);
+          console.error("Errore nel caricamento dati per modifica:", err);
         }
       }
     };
-    caricaStagioniInModifica();
+
+    caricaSerieInModifica();
   }, []);
 
   //salvataggio nel file serie.json in AsyncStorage

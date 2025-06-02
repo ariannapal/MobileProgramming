@@ -34,6 +34,7 @@ export default function ModificaScreen() {
   //Se params.id è undefined o null, allora id = undefined → !!id = false
   //stato episodi modificati
   const [episodiInput, setEpisodiInput] = useState<string[]>([]);
+  const [posterLoading, setPosterLoading] = useState(false);
 
   const tmdbId = Array.isArray(params.tmdbId)
     ? params.tmdbId[0]
@@ -44,9 +45,31 @@ export default function ModificaScreen() {
   const [categoriePiattaforme, setCategoriePiattaforme] = useState<string[]>(
     []
   );
-  const poster = Array.isArray(params.poster_path)
+  const posterParam = Array.isArray(params.poster_path)
     ? params.poster_path[0]
-    : params.poster_path;
+    : params.poster_path ?? "";
+
+  console.log("DEBUG → poster_param:", posterParam);
+
+  const imageUrl = (() => {
+    if (!posterParam)
+      return "https://via.placeholder.com/342x480?text=Nessuna+immagine";
+
+    // Se inizia con 'http' o 'file://' → già valido
+    if (posterParam.startsWith("http") || posterParam.startsWith("file://")) {
+      return posterParam;
+    }
+
+    // Se inizia con '/' → path TMDb valido
+    if (posterParam.startsWith("/")) {
+      return `https://image.tmdb.org/t/p/w500${posterParam}`;
+    }
+
+    // fallback per ogni altro caso
+    return "https://via.placeholder.com/342x480?text=Nessuna+immagine";
+  })();
+
+  console.log("DEBUG → imageUrl usato nel form:", imageUrl);
 
   //Copia tutti i campi già esistenti dell’oggetto form + quello che inserisco nella chiamata a funzione
   const aggiornaCampo = (campo: string, valore: string) => {
@@ -62,10 +85,7 @@ export default function ModificaScreen() {
     stato: (params.stato as string) || "In corso",
     stagioni: "",
     episodi: "",
-    poster_path:
-      poster?.startsWith("file://") || poster?.startsWith("http")
-        ? poster
-        : `https://image.tmdb.org/t/p/w500${poster}`,
+    poster_path: imageUrl,
     // Se il poster inizia con file:// o http,
     // vuol dire che è già un URL valido → lo usa così com'è
     //Se non inizia con file:// o http, vuol dire che è solo un path parziale da TMDb
@@ -236,7 +256,7 @@ export default function ModificaScreen() {
               stato: serie.stato || "In corso",
               stagioni: serie.stagioni || "",
               episodi: serie.episodi || "",
-              poster_path: serie.poster_path,
+              poster_path: imageUrl,
               rating: serie.rating || "",
               anno: serie.anno || "",
             });
@@ -270,6 +290,7 @@ export default function ModificaScreen() {
 
       //creazione della nuovaserie
       //copiuo tutti i campi del form (...form)
+      const nuovoStato = form.stato === "suggerita" ? "In corso" : form.stato;
       let nuovaSerie = {
         ...form,
         //se è una modifica uso l'id vecchio, altrimenti uno nuovo
@@ -278,6 +299,7 @@ export default function ModificaScreen() {
         //per salvare quello locale o il remoto
         poster_path: percorsoFinalePoster,
         stagioniDettagli: stagioniDettagli,
+        stato: nuovoStato,
       };
       //se era preferita, dopo il salvataggio aggiorno anche i preferiti
       //verifico se esiste già un record con lo stesso id
@@ -430,13 +452,27 @@ export default function ModificaScreen() {
           >
             {localPosterUri ? (
               <Image
+                key={localPosterUri}
                 source={{ uri: localPosterUri }}
                 style={{ width: 150, height: 225, borderRadius: 12 }}
               />
             ) : form.poster_path ? (
               <Image
-                source={{ uri: form.poster_path }}
+                key={form.poster_path}
+                source={{
+                  uri:
+                    form.poster_path.startsWith("http") ||
+                    form.poster_path.startsWith("https")
+                      ? `${form.poster_path}?t=${Date.now()}`
+                      : form.poster_path,
+                }}
                 style={{ width: 150, height: 225, borderRadius: 12 }}
+                onError={(e) =>
+                  console.log(
+                    "❌ Errore caricamento immagine finale:",
+                    e.nativeEvent
+                  )
+                }
               />
             ) : (
               <View

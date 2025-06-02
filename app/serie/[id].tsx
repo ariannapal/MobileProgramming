@@ -382,45 +382,21 @@ export default function SerieDettaglioScreen() {
           {serie.stato === "suggerita" && (
             <TouchableOpacity
               style={styles.startButton}
-              onPress={async () => {
-                const data = await AsyncStorage.getItem("serie.json");
-                if (!data) return;
-
-                const lista = JSON.parse(data);
-                const aggiornata = lista.map((s: any) =>
-                  String(s.id) === String(serie.id)
-                    ? { ...s, stato: "In corso" }
-                    : s
-                );
-
-                await AsyncStorage.setItem(
-                  "serie.json",
-                  JSON.stringify(aggiornata)
-                );
-
-                // Trova la serie aggiornata
-                const nuovaSerie = aggiornata.find(
-                  (s: any) => String(s.id) === String(serie.id)
-                );
-
-                // Aggiorna lo stato locale
-                setSerie(nuovaSerie);
-
-                // Naviga verso la pagina di modifica passando tutti i dati
+              onPress={() => {
                 router.push({
                   pathname: "/modifica",
                   params: {
-                    id: nuovaSerie.id,
-                    titolo: nuovaSerie.titolo,
-                    overview: nuovaSerie.trama,
-                    genere: nuovaSerie.genere,
-                    piattaforma: nuovaSerie.piattaforma,
-                    poster_path: nuovaSerie.poster_path,
-                    rating: nuovaSerie.rating,
-                    anno: nuovaSerie.anno,
-                    stato: nuovaSerie.stato,
-                    stagioni: JSON.stringify(nuovaSerie.stagioniDettagli ?? []), // se stagioniDettagli è un array, passa stringificato
-                    episodi: "", // se vuoi puoi gestire gli episodi qui o nella pagina di modifica
+                    id: serie.id,
+                    titolo: serie.titolo,
+                    overview: serie.trama,
+                    genere: serie.genere,
+                    piattaforma: serie.piattaforma,
+                    poster_path: serie.poster_path,
+                    rating: serie.rating,
+                    anno: serie.anno,
+                    stato: "suggerita", // ancora suggerita
+                    stagioni: JSON.stringify(serie.stagioniDettagli ?? []),
+                    episodi: "",
                   },
                 });
               }}

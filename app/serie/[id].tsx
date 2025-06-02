@@ -213,7 +213,7 @@ export default function SerieDettaglioScreen() {
             );
             console.log("Serie rimossa da serie.json");
 
-            // ✅ Elimina i dati degli episodi salvati
+            // Elimina i dati degli episodi salvati
             await AsyncStorage.removeItem(`episodiVisti-${serie.id}`);
             console.log("Dati episodi rimossi");
 

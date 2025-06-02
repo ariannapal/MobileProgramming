@@ -1,6 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Checkbox } from "expo-checkbox";
 import * as FileSystem from "expo-file-system";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -17,6 +16,8 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import Animated, { FadeInUp } from "react-native-reanimated";
+
 import { SafeAreaView } from "react-native-safe-area-context";
 import StarRating from "react-native-star-rating-widget";
 import {
@@ -439,28 +440,37 @@ export default function SerieDettaglioScreen() {
               {stagioneSelezionata !== null && (
                 <View style={styles.episodiContainer}>
                   {[...Array(episodiStagioneCorrente)].map((_, i) => (
-                    <TouchableOpacity
-                      key={i}
-                      style={styles.episodioRow}
-                      onPress={() => toggleEpisodioVisto(i)}
+                    <Animated.View
+                      key={`ep-${i}-${stagioneSelezionata}`}
+                      entering={FadeInUp.springify().delay(i * 40)}
                     >
-                      <Text style={styles.episodio}>
-                        S{stagioneSelezionata} E{i + 1}
-                      </Text>
-                      <Checkbox
-                        style={styles.checkbox}
-                        value={!!episodiAttivi[i]}
-                        onValueChange={() => toggleEpisodioVisto(i)}
-                      />
-                    </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[
+                          styles.episodioRow,
+                          episodiAttivi[i] && styles.episodioRowChecked,
+                        ]}
+                        onPress={() => toggleEpisodioVisto(i)}
+                      >
+                        <Text style={styles.episodioLabel}>
+                          S{stagioneSelezionata} E{i + 1}
+                        </Text>
+                        {episodiAttivi[i] && (
+                          <Ionicons
+                            name="checkmark-circle"
+                            size={22}
+                            color="#6c2bd9"
+                          />
+                        )}
+                      </TouchableOpacity>
+                    </Animated.View>
                   ))}
                 </View>
               )}
             </>
           )}
-
-          <TouchableOpacity onPress={deleteSerie} style={styles.deleteButton}>
-            <Text style={styles.deleteButtonText}>Elimina Serie</Text>
+          <TouchableOpacity onPress={deleteSerie} style={styles.resetButton}>
+            <Ionicons name="trash-outline" size={18} color="#fff" />
+            <Text style={styles.resetText}>Elimina Serie</Text>
           </TouchableOpacity>
         </ScrollView>
       </SafeAreaView>
@@ -552,8 +562,13 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+    paddingVertical: 12,
+    paddingHorizontal: 16,
     marginBottom: 8,
+    borderRadius: 12,
+    backgroundColor: "#1e1e3f",
   },
+
   checkbox: {
     marginLeft: 8,
   },
@@ -574,6 +589,23 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
+  resetButton: {
+    alignSelf: "center",
+    marginVertical: 20,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    backgroundColor: "#cc4949",
+    borderRadius: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+
+  resetText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "600",
+  },
   startButton: {
     backgroundColor: "#4CAF50",
     padding: 12,
@@ -585,5 +617,16 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontWeight: "bold",
     fontSize: 16,
+  },
+  episodioLabel: {
+    color: "#fff",
+    fontSize: 15,
+    fontWeight: "500",
+  },
+
+  episodioRowChecked: {
+    backgroundColor: "#2e2e5a",
+    borderWidth: 1.5,
+    borderColor: "#6c2bd9",
   },
 });

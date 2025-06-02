@@ -78,8 +78,10 @@ const StatisticheScreen = () => {
             dataInizioPiuVecchia = new Date();
           }
 
-          /* Calcola il totale episodi visti sommando su tutte le serie */
-          for (const serie of serieValide) {
+          /* Calcola il totale episodi visti solo per le serie attualmente in corso */
+          /* Esclude le serie completate per ottenere una media settimanale/mensile più rappresentativa dell'attività recente */
+          for (const serie of serieValide.filter((s: any) => s.stato !== "Completata")) {
+
             const key = `episodiVisti-${serie.id}`;
             const raw = await AsyncStorage.getItem(key);
             const dati = raw ? JSON.parse(raw) : {};
@@ -111,7 +113,7 @@ const StatisticheScreen = () => {
               1
             );
 
-          /* Calcola la media episodi visti al mese */  
+          /* Calcola la media episodi visti al mese */
           const mediaMese = totaleEpisodiVisti / mesiTotali;
 
 
@@ -125,7 +127,7 @@ const StatisticheScreen = () => {
             {}
           );
 
-           /* Calcola la distribuzione delle serie per piattaforma */
+          /* Calcola la distribuzione delle serie per piattaforma */
           const distribuzionePiattaforma = serieValide.reduce(
             (acc: any, serie: any) => {
               const piattaforma = serie.piattaforma || "Non specificato";
@@ -160,7 +162,7 @@ const StatisticheScreen = () => {
             .sort((a: any, b: any) => b.episodiVisti - a.episodiVisti)
             .slice(0, 5);
 
-          /* Aggiorna lo stato con tutte le statistiche calcolate */  
+          /* Aggiorna lo stato con tutte le statistiche calcolate */
           setStatistiche({
             //totaliSeguite,
             completate,
@@ -244,7 +246,7 @@ const StatisticheScreen = () => {
                     {/* Titolo della serie */}
                     <Text style={styles.topSerieTitle}>{serie.titolo}</Text>
                   </View>
-                   {/* Numero di episodi visti */}
+                  {/* Numero di episodi visti */}
                   <Text style={styles.topSerieEpisodes}>
                     Episodi visti: {serie.episodiVisti}
                   </Text>
@@ -308,7 +310,7 @@ const StatisticheScreen = () => {
       {/* Sezione media episodi guardati */}
       <View style={styles.mediaSectionCard}>
         <Text style={styles.title}>Quanti Episodi Guardi in Media?</Text>
-        
+
         {/* Container con due card per media settimanale e mensile */}
         <View style={styles.mediaContainer}>
 

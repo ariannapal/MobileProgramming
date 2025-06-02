@@ -42,11 +42,10 @@ type Serie = {
 };
 
 export default function HomeScreen() {
-  //stato per il rendering delle serie in corso
+
+  //stati per serie viste, completate suggerite
   const [serieViste, setSerieViste] = useState<Serie[]>([]);
-  //stato per il rendering delle serie completate
   const [serieCompletate, setSerieCompletate] = useState<Serie[]>([]);
-  //stato per il rendering delle serie suggerite
   const [suggestedSeries, setSuggestedSeries] = useState<Serie[]>([
     //stato iniziale, vuoto con la scheda di scoperta nuova serie
     { id: "loadMore", titolo: "Scopri una Nuova Serie" },

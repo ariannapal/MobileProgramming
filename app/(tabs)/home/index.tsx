@@ -14,12 +14,15 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { fetchDettagliSerie } from "../../_utils/fetchDettagliSerie";
 
+// per ogni stagione faccio un tipo
 type StagioneDettaglio = {
   stagione: number;
   episodi: number;
 };
 
+//singola serie
 type Serie = {
   id?: string;
   titolo: string;
@@ -37,63 +40,78 @@ type Serie = {
 };
 
 export default function HomeScreen() {
+  //stato per il rendering delle serie in corso
   const [serieViste, setSerieViste] = useState<Serie[]>([]);
+  //stato per il rendering delle serie completate
   const [serieCompletate, setSerieCompletate] = useState<Serie[]>([]);
+  //stato per il rendering delle serie suggerite
   const [suggestedSeries, setSuggestedSeries] = useState<Serie[]>([
+    //stato iniziale, vuoto con la scheda di scoperta nuova serie
     { id: "loadMore", titolo: "Scopri nuova serie" },
   ]);
 
+  //navigazione
   const router = useRouter();
-  function getImageUri(item: { poster_path?: string; image?: string }) {
-    if (!item.poster_path && !item.image) {
+
+  //immagine da mostrare, prende in ingresso un item che se ha un poster_path è una stringa
+  //e se ha un'immagine è una stringa
+  function getImageUri(item: { poster_path?: string; image?: string }): string {
+    const path = item.poster_path || item.image;
+
+    if (!path) {
       return "https://via.placeholder.com/120x180?text=?";
     }
 
-    if (item.poster_path) {
-      if (item.poster_path.startsWith("file://")) {
-        return item.poster_path;
-      }
-      if (item.poster_path.startsWith("/")) {
-        return `https://image.tmdb.org/t/p/w185${item.poster_path}`;
-      }
-      if (item.poster_path.startsWith("http")) {
-        return item.poster_path;
-      }
+    if (path.startsWith("file://") || path.startsWith("http")) {
+      return path;
     }
 
-    return item.image || "https://via.placeholder.com/120x180?text=?";
+    return `https://image.tmdb.org/t/p/w185${path}`;
   }
 
+  //stato vuoto --> Card di aggiunta serie in corso o completata
   const renderEmptyState = (message: string) => (
-  <TouchableOpacity
-    style={styles.addButtonCard}
-    onPress={() => router.push("/aggiungi")}
-  >
-    <Ionicons name="add-circle" size={50} color="#aaa" />
-    <Text style={styles.addButtonText}>{message}</Text>
-  </TouchableOpacity>
-);
-
+    <TouchableOpacity
+      style={styles.addButtonCard}
+      //stack schermata di aggiunta
+      onPress={() => router.push("/aggiungi")}
+    >
+      <Ionicons name="add-circle" size={50} color="#aaa" />
+      <Text style={styles.addButtonText}>{message}</Text>
+    </TouchableOpacity>
+  );
+  //ogni volta che tonro sulla home, aggiorno visualizzazione di serie completate, in corso e suggerite
   useFocusEffect(
     useCallback(() => {
       const loadSerie = async () => {
         try {
+          //prendo i dati con una promise dall'asyncstorage
           const json = await AsyncStorage.getItem("serie.json");
+          //i dati devono essere di tipo serie se il parsing restituisce qualcosa lo inserisco
+          // altrimenti array vuoto
           const data: Serie[] = json ? JSON.parse(json) : [];
 
+          //prendo solo le serieincorso filtrando da data per ogni serie,
+          //il campo stato deve essere in corso
           const serieInCorso = data.filter(
             (serie) => serie.stato?.toLowerCase().trim() === "in corso"
           );
 
+          //prendo solo le seriefinite filtrando da data per ogni serie,
+          //il campo stato deve essere completata
           const serieFatte = data.filter(
             (serie) => serie.stato?.toLowerCase().trim() === "completata"
           );
+          //prendo solo le suggerite filtrando da data per ogni serie,
+          //il campo stato deve essere suggerita
           const suggerite = data.filter(
             (serie) => serie.stato?.toLowerCase().trim() === "suggerita"
           );
-
+          //setto il nuovo stato delle viste, delle completate e delle suggerite
           setSerieViste(serieInCorso);
           setSerieCompletate(serieFatte);
+
+          //inserisco le suggerite nuove + quella di base (stato 0)
           setSuggestedSeries([
             ...suggerite,
             { id: "loadMore", titolo: "Scopri nuova serie" },
@@ -102,55 +120,11 @@ export default function HomeScreen() {
           console.error("Errore nel caricamento delle serie:", err);
         }
       };
+      // Avvio la funzione di caricamento asincrono
       loadSerie();
     }, [])
   );
-  const clearAllData = async () => {
-    try {
-      await AsyncStorage.removeItem("serie.json");
-      Alert.alert("Successo", "Dati delle serie TV cancellati");
-    } catch (e) {
-      console.error("Errore nella cancellazione dei dati", e);
-    }
-  };
 
-  const fetchDettagliSerie = async (id: number) => {
-    try {
-      const res = await fetch(
-        `https://api.themoviedb.org/3/tv/${id}?language=it-IT`,
-        {
-          headers: {
-            Authorization:
-              "Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiIxYWMxMzU4NjY3ZjcyODgzNWRhZjk2YjAxZDZkODVhMCIsIm5iZiI6MTc0Njc3ODg1MC4zMTcsInN1YiI6IjY4MWRiYWUyM2E2OGExMTcyOTYzYmQxNiIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.I6RbtWrCPo0n0YWNYNfGs0wnAcIrG0n5t4KYh0W7Am4",
-            accept: "application/json",
-          },
-        }
-      );
-
-      if (!res.ok) throw new Error("Errore nel recupero dettagli serie");
-
-      const data = await res.json();
-
-      // Mappa ogni stagione con numero e conteggio episodi
-     const episodiPerStagione = data.seasons
-  .filter((s: any) => s.season_number !== 0)
-  .map((s: any) => ({
-    stagione: s.season_number,
-    episodi: s.episode_count,
-  }));
-
-    
-     return {
-  numeroStagioni: data.number_of_seasons,
-  numeroEpisodiTotale: data.number_of_episodes,
-  episodiPerStagione,
-  dettagliRaw: data,
-};
-    } catch (err) {
-      console.error("Errore dettagli serie:", err);
-      return null;
-    }
-  };
   const resetAppData = async () => {
     try {
       const keys = await AsyncStorage.getAllKeys();
@@ -181,6 +155,10 @@ export default function HomeScreen() {
     }
   };
 
+  //prendo una serie TV casuale dalle più votate
+  //diventa un oggetto serie, la salvo in AsyncStor
+  //aggiungo ai suggerimenti
+  //la uso in renderItem quando id = loadmore
   const fetchNuovaSerie = async () => {
     try {
       // Fetch serie top rated
@@ -200,42 +178,44 @@ export default function HomeScreen() {
       const data = await res.json();
 
       // Evitiamo duplicati
+      //suggestedSeries stato e array delle serie suggerite
+      //nel set, per ogni serie mappo solo il suo id
+      //set --> senza duplicati
+      //risultato: serie nei suggeriti sempre diverse dalle presenti
       const serieEsistenti = new Set(suggestedSeries.map((s) => s.id));
+
+      //disponibili le serie che ha dato l'API
+      //con filter mantengo solo quelle che non hanno corrispondenza in SerieEsisenti
       const serieDisponibili = data.results.filter(
         (s: any) => !serieEsistenti.has(s.id?.toString())
       );
 
+      //caso tutte le serie sono state già suggerite
       if (serieDisponibili.length === 0) {
         console.warn("Nessuna nuova serie da suggerire");
         return;
       }
-
+      //calcola un numero casuale dalle serie disponibili
       const randomIndex = Math.floor(Math.random() * serieDisponibili.length);
+      //salvo in show la serie casuale scelta con un indice casuale
       const show = serieDisponibili[randomIndex];
 
       // Ottieni dettagli completi con episodiPerStagione ecc.
-      const dettagli = await fetchDettagliSerie(show.id);
+      const dettagli = await fetchDettagliSerie(
+        show.id,
+        "Netflix",
+        "suggerita"
+      );
 
       if (!dettagli) {
         throw new Error("Errore nel recupero dettagli serie");
       }
 
-      const nuovaSerie: Serie = {
-        id: dettagli.dettagliRaw.id?.toString(),
-        titolo: dettagli.dettagliRaw.name,
-        trama: dettagli.dettagliRaw.overview,
-        genere: dettagli.dettagliRaw.genres?.[0]?.name || "",
-        piattaforma: "Netflix",
-        stato: "suggerita",
-        stagioni: dettagli.numeroStagioni,
-        episodi: dettagli.numeroEpisodiTotale,
-        poster_path: dettagli.dettagliRaw.poster_path,
-        rating: dettagli.dettagliRaw.vote_average?.toFixed(1) || "",
-        anno: dettagli.dettagliRaw.first_air_date?.substring(0, 4) || "",
-        stagioniDettagli: dettagli.episodiPerStagione,
-      };
+      //inserisco la nuova serie con i suoi dettagli nei suggeriti
+      // Inserisco la nuova serie con i suoi dettagli nei suggeriti
+      const nuovaSerie = dettagli;
 
-      // Leggi esistente da AsyncStorage
+      // Leggo elenco esistente da AsyncStorage
       const existingData = await AsyncStorage.getItem("serie.json");
       const lista: Serie[] = existingData ? JSON.parse(existingData) : [];
 
@@ -246,6 +226,7 @@ export default function HomeScreen() {
       }
 
       // Aggiorna stato locale
+      //prendo la serie nuova inserita e quelle precedenti eccetto la card load more
       setSuggestedSeries((prev) => [
         nuovaSerie,
         ...prev.filter((item) => item.id !== "loadMore"),
@@ -257,6 +238,7 @@ export default function HomeScreen() {
   };
 
   const renderItem = ({ item }: { item: Serie }) => {
+    //renderizzo la card di scoperta nuova serie
     if (item.id === "loadMore") {
       return (
         <TouchableOpacity
@@ -268,34 +250,35 @@ export default function HomeScreen() {
         </TouchableOpacity>
       );
     }
+    //prendo il path dell'immagine dalla funzione
+    const imageUri = getImageUri(item);
 
-    const imageUri = (() => {
-      if (!item.poster_path && !item.image)
-        return "https://via.placeholder.com/120x180?text=?";
-      if (item.poster_path) {
-        if (item.poster_path.startsWith("file://")) return item.poster_path;
-        if (item.poster_path.startsWith("/"))
-          return `https://image.tmdb.org/t/p/w185${item.poster_path}`;
-        if (item.poster_path.startsWith("http")) return item.poster_path;
-      }
-      return item.image || "https://via.placeholder.com/120x180?text=?";
-    })();
-
+    //caso card normale
     return (
+      //card tipo bottone
       <TouchableOpacity
         style={styles.card}
         onPress={async () => {
+          //leggo il contenuto di serie.json nell'Async
           const data = await AsyncStorage.getItem("serie.json");
+
+          //trasformo in una lista con il parser
           const lista = data ? JSON.parse(data) : [];
+
+          //se esiste già lo stesso componente nella lista da true
+          //item parametro passato dalla flatlist
           const esiste = lista.some((s: Serie) => s.id === item.id);
 
+          //se non è presente la aggiungo
           if (!esiste && item.id && item.titolo) {
+            //prendo la lista di prima + l'item nuovo
             const nuovaLista = [...lista, item];
             await AsyncStorage.setItem(
               "serie.json",
               JSON.stringify(nuovaLista)
             );
           }
+          //dopo salvataggio passo a serie/id
           router.push(`/serie/${encodeURIComponent(item.id || item.titolo)}`);
         }}
       >
@@ -328,28 +311,27 @@ export default function HomeScreen() {
 
       <ScrollView showsVerticalScrollIndicator={false}>
         <Text style={styles.sectionTitle}>Serie TV In Corso</Text>
-        
-        
-      <FlatList
-  data={[...serieViste].reverse()}
-  keyExtractor={(item, index) => item.id || item.titolo + index}
-  horizontal
-  renderItem={renderItem}
-  contentContainerStyle={styles.horizontalList}
-  showsHorizontalScrollIndicator={false}
-  ListEmptyComponent={renderEmptyState("Aggiungi una serie in corso")}
-/>
 
-  <Text style={styles.sectionTitle}>Serie TV Completate</Text>
-<FlatList
-  data={[...serieCompletate].reverse()}
-  keyExtractor={(item, index) => item.id || item.titolo + index}
-  horizontal
-  renderItem={renderItem}
-  contentContainerStyle={styles.horizontalList}
-  showsHorizontalScrollIndicator={false}
-  ListEmptyComponent={renderEmptyState("Aggiungi una serie completata")}
-/>
+        <FlatList
+          data={[...serieViste].reverse()}
+          keyExtractor={(item, index) => item.id || item.titolo + index}
+          horizontal
+          renderItem={renderItem}
+          contentContainerStyle={styles.horizontalList}
+          showsHorizontalScrollIndicator={false}
+          ListEmptyComponent={renderEmptyState("Aggiungi una serie in corso")}
+        />
+
+        <Text style={styles.sectionTitle}>Serie TV Completate</Text>
+        <FlatList
+          data={[...serieCompletate].reverse()}
+          keyExtractor={(item, index) => item.id || item.titolo + index}
+          horizontal
+          renderItem={renderItem}
+          contentContainerStyle={styles.horizontalList}
+          showsHorizontalScrollIndicator={false}
+          ListEmptyComponent={renderEmptyState("Aggiungi una serie completata")}
+        />
 
         <Text style={styles.sectionTitle}>Suggeriti per te</Text>
         <FlatList

@@ -68,7 +68,7 @@ const CategorieScreen = () => {
             );
           }
 
-          // ✅ Carica le serie
+          // Carica le serie
           const serieSalvate = await AsyncStorage.getItem(SERIE_KEY);
           const parsedSerie = serieSalvate ? JSON.parse(serieSalvate) : [];
 
@@ -78,16 +78,16 @@ const CategorieScreen = () => {
           for (const serie of parsedSerie) {
             if (serie.stato === "suggerita") {
               continue; // Salta questa serie
-               }
-               if (serie.genere) {
-                conteggiGeneri[serie.genere] =
-                (conteggiGeneri[serie.genere] || 0) + 1;
-              }
-              if (serie.piattaforma) {
-                conteggiPiattaforme[serie.piattaforma] =
-                (conteggiPiattaforme[serie.piattaforma] || 0) + 1;
-              }
             }
+            if (serie.genere) {
+              conteggiGeneri[serie.genere] =
+                (conteggiGeneri[serie.genere] || 0) + 1;
+            }
+            if (serie.piattaforma) {
+              conteggiPiattaforme[serie.piattaforma] =
+                (conteggiPiattaforme[serie.piattaforma] || 0) + 1;
+            }
+          }
 
           setConteggi({
             generi: conteggiGeneri,

@@ -18,62 +18,39 @@ import {
 import { isFavorite, saveFavorite } from "./_utils/favoritesStorage";
 
 export default function ModificaScreen() {
+  //stato del poster inserito da locale. Valore stringa o null, stato 0 = null
   const [localPosterUri, setLocalPosterUri] = useState<string | null>(null);
-
+  //navigazione expo router
   const router = useRouter();
+  //prendo i params da handleSelectShow
   const params = useLocalSearchParams();
+
+  //prendo l'id di [id].tsx
+  //caso in cui id sia un array invece di una stringa
   const id = Array.isArray(params.id) ? params.id[0] : params.id;
+  const isModifica = !!id;
+  //Se params.id è presente (es. "123"), allora id = "123" → !!id = true
+  //Se params.id è undefined o null, allora id = undefined → !!id = false
+  //stato episodi modificati
   const [episodiInput, setEpisodiInput] = useState<string[]>([]);
 
   const tmdbId = Array.isArray(params.tmdbId)
     ? params.tmdbId[0]
     : params.tmdbId;
-  const isModifica = !!id;
-  //Se params.id è presente (es. "123"), allora id = "123" → !!id = true
-  //Se params.id è undefined o null, allora id = undefined → !!id = false
 
+  //soggetto a cambiamento
   const [categorieGeneri, setCategorieGeneri] = useState<string[]>([]);
   const [categoriePiattaforme, setCategoriePiattaforme] = useState<string[]>(
     []
   );
-  const copiaImmagineLocale = async (uri: string) => {
-    const filename = uri.split("/").pop();
-    if (!FileSystem.documentDirectory) {
-      throw new Error("documentDirectory non disponibile");
-    }
-    const dest = FileSystem.documentDirectory + filename;
-    try {
-      await FileSystem.copyAsync({ from: uri, to: dest });
-      return dest; // percorso permanente
-    } catch (e) {
-      console.error("Errore copia file", e);
-      return uri; // fallback
-    }
-  };
-  const pickImage = async () => {
-    const permissionResult =
-      await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permissionResult.granted) {
-      alert("Permesso negato alla galleria");
-      return;
-    }
-    const pickerResult = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      quality: 1,
-    });
-
-    if (
-      !pickerResult.canceled &&
-      pickerResult.assets &&
-      pickerResult.assets.length > 0
-    ) {
-      // Salva l'uri della prima immagine selezionata
-      setLocalPosterUri(pickerResult.assets[0].uri);
-    }
-  };
   const poster = Array.isArray(params.poster_path)
     ? params.poster_path[0]
     : params.poster_path;
+
+  //Copia tutti i campi già esistenti dell’oggetto form + quello che inserisco nella chiamata a funzione
+  const aggiornaCampo = (campo: string, valore: string) => {
+    setForm((prev) => ({ ...prev, [campo]: valore }));
+  };
 
   //dati della schermata precedente
   const [form, setForm] = useState({
@@ -88,13 +65,62 @@ export default function ModificaScreen() {
       poster?.startsWith("file://") || poster?.startsWith("http")
         ? poster
         : `https://image.tmdb.org/t/p/w500${poster}`,
-    // Se il poster inizia con "file://" o "http",
+    // Se il poster inizia con file:// o http,
     // vuol dire che è già un URL valido → lo usa così com'è
     //Se non inizia con file:// o http, vuol dire che è solo un path parziale da TMDb
-    // (es: "/xytag123.jpg"), quindi lo costruisce
+    //quindi lo costruisce
     rating: params.rating as string,
     anno: params.anno as string,
   });
+
+  //funzione per copiare l'immagine da locale a permanente
+  const copiaImmagineLocale = async (uri: string) => {
+    //prendo il nome del file dall'uri
+    const filename = uri.split("/").pop();
+    //vedo se documentDirectory è disp
+    if (!FileSystem.documentDirectory) {
+      throw new Error("documentDirectory non disponibile");
+    }
+    //percorso di dest = cartella documenti + nomefile
+    const dest = FileSystem.documentDirectory + filename;
+    try {
+      //copia il file dall'uri alla posizione permanente
+      await FileSystem.copyAsync({ from: uri, to: dest });
+      return dest; // percorso permanente
+    } catch (e) {
+      console.error("Errore copia file", e);
+      return uri; // fallback
+    }
+  };
+  //chiedo permesso per accedere alla galleria e scegliere un'immagine
+  // immagine --> copiaImmagineLocale
+  const pickImage = async () => {
+    //permesso
+    const permissionResult =
+      await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permissionResult.granted) {
+      alert("Permesso negato alla galleria");
+      return;
+    }
+    // Apre la galleria immagini e permette la selezione di un file
+    const pickerResult = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images, //accetta solo immagini
+      quality: 1, //massima qualita
+    });
+
+    //se l'utente non ha annullato e ha selezionato almeno un'immagine
+    if (
+      !pickerResult.canceled &&
+      pickerResult.assets &&
+      pickerResult.assets.length > 0
+    ) {
+      // Salva l'uri della prima immagine selezionata
+      setLocalPosterUri(pickerResult.assets[0].uri);
+    }
+  };
+
+  //chiamata asincrona che si aspetta una promise dall'api
+  //passiamo anche l'id
   const fetchDettagliSerie = async (id: number) => {
     try {
       const res = await fetch(
@@ -118,21 +144,16 @@ export default function ModificaScreen() {
       //data.seasons è un array di stagioni provenienti dalla risposta di TMDb.
       //Ogni s rappresenta una stagione
       const episodiPerStagione = data.seasons
+        //elimino la stagione 0
         .filter((s: any) => s.season_number !== 0)
+        //invece di avere season_number ho solo stagione:1
         .map((s: any) => ({
           stagione: s.season_number,
           episodi: s.episode_count,
         }));
-
-      episodiPerStagione.forEach(
-        (stagione: { stagione: number; episodi: number }) => {
-          console.log(
-            "Stagione: " + stagione.stagione + ", Episodi: " + stagione.episodi
-          );
-        }
-      );
-
+      //aggiorno numero episodi per stagione
       setStagioniDettagli(episodiPerStagione);
+      //aggiorno i capi visibili all'utente
       aggiornaCampo("stagioni", data.number_of_seasons?.toString() || "");
       aggiornaCampo("episodi", data.number_of_episodes?.toString() || "");
     } catch (err) {
@@ -145,15 +166,19 @@ export default function ModificaScreen() {
   const [stagioniDettagli, setStagioniDettagli] = useState<
     { stagione: number; episodi: number }[]
   >([{ stagione: 1, episodi: 0 }]);
+
+  //al caricamento della pagine faccio il fetch con l'id da aggiungi.tsx
   useEffect(() => {
-    const idNumerico = parseInt(params.tmdbId as string);
+    const idNumerico = parseInt(tmdbId as string);
     if (!isNaN(idNumerico)) {
       fetchDettagliSerie(idNumerico);
     }
   }, []);
 
-  //quando cambia setto stagioni dettagli
+  //sincronizzo il numero degli episodi dentro i campi di text input
   useEffect(() => {
+    //prendo le stagioni --> estraggo solo gli episodi
+    //salvo nel set episodi input
     setEpisodiInput(stagioniDettagli.map((s) => s.episodi.toString()));
   }, [stagioniDettagli]);
 
@@ -164,17 +189,16 @@ export default function ModificaScreen() {
         const data = await AsyncStorage.getItem("categorie_dati");
         if (data) {
           const parsed = JSON.parse(data);
+          //mappo per ogni genere il suo nome, comparira solo il nome
           const generi = parsed.generi.map((g: any) => g.nome);
+          //mappo le piattaforme e comparira solo il nome della piattaforma
           const piattaforme = parsed.piattaforme.map((p: any) => p.nome);
 
-          // se il genere del form non è presente, lo aggiungo temporaneamente
+          // se il genere del form non è presente nei generi delle categorie, lo aggiungo temporaneamente
           if (form.genere && !generi.includes(form.genere)) {
             generi.push(form.genere);
           }
-          if (form.piattaforma && !piattaforme.includes(form.piattaforma)) {
-            piattaforme.push(form.piattaforma);
-          }
-
+          //setto gli stati dopo il caricamento da asyncstorage
           setCategorieGeneri(generi);
           setCategoriePiattaforme(piattaforme);
         }
@@ -185,22 +209,23 @@ export default function ModificaScreen() {
 
     caricaCategorie();
   }, []);
-  //...prev Copia tutti i campi già esistenti dell’oggetto form
-  const aggiornaCampo = (campo: string, valore: string) => {
-    setForm((prev) => ({ ...prev, [campo]: valore }));
-  };
 
-  //se faccio una modifica, ho un nuovo form
+  /* SETTING PER LA MODIFICA DA [ID].TSX */
+
+  //se faccio una modifica, ho un form diverso
   useEffect(() => {
     const caricaSerieInModifica = async () => {
-      if (isModifica && params.id) {
+      //is modifica = !!id
+      if (isModifica) {
         try {
+          //prendo prima tutte le serie esistenti dall'asynx
           const esistentiRaw = await AsyncStorage.getItem("serie.json");
+          //se esistentiRaw non è vuoto faccio il parsing
           const esistenti = esistentiRaw ? JSON.parse(esistentiRaw) : [];
-          const serie = esistenti.find(
-            (s: any) => String(s.id) === String(params.id)
-          );
+          //cerco la serie che mi è stata passata da parametro String(params.id) e me la prendo in serie
+          const serie = esistenti.find((s: any) => String(s.id) === String(id));
 
+          //se serie esiste:
           if (serie) {
             // aggiorna tutto il form con i dati salvati
             setForm({
@@ -215,7 +240,7 @@ export default function ModificaScreen() {
               rating: serie.rating || "",
               anno: serie.anno || "",
             });
-
+            //ogni stagione con i relativi episodi
             if (serie.stagioniDettagli) {
               setStagioniDettagli(serie.stagioniDettagli);
             }
@@ -231,10 +256,10 @@ export default function ModificaScreen() {
 
   //salvataggio nel file serie.json in AsyncStorage
   const salvaSerieNelJson = async () => {
-    //Se l'utente ha scelto un'immagine dal dispositivo (localPosterUri),
-    //la copio in una cartella sicura (documentDirectory)
+    //caso in cui l'utente abbia scelto il poster originale
     let percorsoFinalePoster = form.poster_path;
     if (localPosterUri) {
+      //se lo stato è presente copio l'immagine da locale a document directory su file system
       percorsoFinalePoster = await copiaImmagineLocale(localPosterUri);
     }
 
@@ -244,7 +269,7 @@ export default function ModificaScreen() {
       const esistenti = esistentiRaw ? JSON.parse(esistentiRaw) : [];
 
       //creazione della nuovaserie
-      //copiuo tutti i campi del form ...form
+      //copiuo tutti i campi del form (...form)
       let nuovaSerie = {
         ...form,
         //se è una modifica uso l'id vecchio, altrimenti uno nuovo
@@ -255,6 +280,7 @@ export default function ModificaScreen() {
         stagioniDettagli: stagioniDettagli,
       };
       //se era preferita, dopo il salvataggio aggiorno anche i preferiti
+      //verifico se esiste già un record con lo stesso id
       const eraPreferita = await isFavorite(nuovaSerie.id);
       let nuovaLista;
 
@@ -262,7 +288,8 @@ export default function ModificaScreen() {
       if (isModifica) {
         //ogni elemento s è una serie già salvata
         nuovaLista = esistenti.map((s: any) =>
-          //se l'id della serie corrisponde a quello che modifico, lo stsotuisco con nuova serie
+          //se l'id della serie corrisponde a quello che modifico,
+          // lo stsotuisco con nuova serie
           String(s.id) === String(id) ? nuovaSerie : s
         );
       } else {
@@ -280,48 +307,42 @@ export default function ModificaScreen() {
         nuovaLista = [...esistenti, nuovaSerie];
       }
       //salvo in serie.json la nuova lista sovrascritta
+      //set item(chiave, valore)
       await AsyncStorage.setItem("serie.json", JSON.stringify(nuovaLista));
+
       //sovrascrivo anche la nuova serie preferita
       if (eraPreferita) {
         await saveFavorite(nuovaSerie); // aggiorna i dati salvati
       }
-      console.log("ID in modifica:", id);
-      console.log(
-        "Serie salvate:",
-        esistenti.map((s: any) => s.id)
-      );
 
       alert(isModifica ? "Modifica salvata!" : "Serie aggiunta alla libreria!");
-      console.log("Salvo/modifico serie con ID:", nuovaSerie.id);
-      console.log(
-        "Serie esistenti:",
-        esistenti.map((s: any) => s.id)
-      );
-      console.log(
-        "Serie modificata:",
-        esistenti.find((s: any) => String(s.id) === String(id))
-      );
 
-      // Se è una modifica, non toccare gli episodi
-      // Se è una nuova, imposta tutti visti se "Completata"
+      //!params.id = non sono in modifica, ma in aggiunta
+      //inizializzazione episodi visti
       if (!params.id || form.stato === "Completata") {
-        //se non esiste sto creando una nuova serie
+        //salvo lo stato degli episodi totali
         const episodiVistiTotali: {
-          //inizializzo lo stato degli episodi
+          //mappa chiave : stagione, valore: episodio
           [stagione: string]: { [episodio: number]: boolean };
         } = {};
 
+        //per ogni stagione in stagioniDettagli:
         for (const stagione of stagioniDettagli) {
           const numeroEpisodi = stagione.episodi;
+          //episodi stagione per ogni episodio
+          //se vedo un episodio setta a true, altrimenti false
           const episodiStagione: { [episodio: number]: boolean } = {};
 
+          //per tutti gli episodi, se la serie è completata
+          //lo stato di visione dell'episodio è true
           for (let i = 0; i < numeroEpisodi; i++) {
             episodiStagione[i] = form.stato === "Completata";
           }
-
+          //aggiungo la chiave = nome stagione
+          //s1: { 0: true, 1: true, 2: true },
           episodiVistiTotali[`s${stagione.stagione}`] = episodiStagione;
         }
-
+        //memorizzo in locale gli episodi visti
         const key = `episodiVisti-${nuovaSerie.id}`;
         await AsyncStorage.setItem(key, JSON.stringify(episodiVistiTotali));
       }

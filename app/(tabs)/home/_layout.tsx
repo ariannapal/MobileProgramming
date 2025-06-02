@@ -1,5 +1,6 @@
 import { Stack } from "expo-router";
-
+/*Gestire la navigazione interna alla tab home, 
+creando un nested stack navigator.*/
 export default function HomeStackLayout() {
   return (
     <Stack>

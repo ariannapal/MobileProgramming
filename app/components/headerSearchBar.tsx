@@ -67,6 +67,7 @@ export default function HeaderSearchBar({
           }}
           keyboardAppearance="dark"
           returnKeyType="search"
+          autoCorrect={false}
         />
       </View>
     </View>

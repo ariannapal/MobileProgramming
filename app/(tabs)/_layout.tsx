@@ -1,3 +1,8 @@
+/*Definisce la navigazione principale, cioè quella che permette di passare 
+tra le Categorie, Statistiche, ecc.
+Imposto gli stili comuni (navbar scura, colori icone, ecc.).
+*/
+
 import { Ionicons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
 

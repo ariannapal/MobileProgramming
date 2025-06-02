@@ -16,6 +16,7 @@ import {
   View,
 } from "react-native";
 import { isFavorite, saveFavorite } from "./_utils/favoritesStorage";
+import { TMDB_API_TOKEN } from './_utils/tmdb-config';
 
 export default function ModificaScreen() {
   //stato del poster inserito da locale. Valore stringa o null, stato 0 = null
@@ -147,9 +148,8 @@ export default function ModificaScreen() {
         `https://api.themoviedb.org/3/tv/${id}?language=it-IT`,
         {
           headers: {
-            Authorization:
-              "Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiIxYWMxMzU4NjY3ZjcyODgzNWRhZjk2YjAxZDZkODVhMCIsIm5iZiI6MTc0Njc3ODg1MC4zMTcsInN1YiI6IjY4MWRiYWUyM2E2OGExMTcyOTYzYmQxNiIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.I6RbtWrCPo0n0YWNYNfGs0wnAcIrG0n5t4KYh0W7Am4", // token tuo
-            accept: "application/json",
+            Authorization: TMDB_API_TOKEN,
+             accept: "application/json",
           },
         }
       );

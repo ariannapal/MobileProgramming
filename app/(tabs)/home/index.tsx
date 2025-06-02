@@ -182,11 +182,8 @@ export default function HomeScreen() {
         throw new Error("Errore nel recupero dettagli serie");
       }
 
-    // Aggiungo la nuova serie alla lista salvata in AsyncStorage
+
       const nuovaSerie = dettagli;
-      const existingData = await AsyncStorage.getItem("serie.json");
-      const lista: Serie[] = existingData ? JSON.parse(existingData) : [];
-    
 
       // Aggiorna stato locale
       //prendo la serie nuova inserita e quelle precedenti eccetto la card load more
@@ -211,19 +208,8 @@ export default function HomeScreen() {
       );
     }
     const imageUri = getImageUri(item);
-    const completamentoPercentuale =
-      item.stagioniDettagli && item.stagioniDettagli.length > 0
-        ? (() => {
-            const totEpisodi = item.stagioniDettagli.reduce(
-              (acc, s) => acc + (s.episodi || 0),
-              0
-            );
-            const key = `episodiVisti-${item.id}`;
-            // puoi accedere ad AsyncStorage se vuoi dinamicamente, oppure...
-            return totEpisodi > 0 && item.stato === "Completata" ? 1 : 0;
-          })()
-        : 0;
-
+    
+   
     // Card  che porta alla pagina dettagli della serie
     const content = (
       <TouchableOpacity

@@ -111,27 +111,7 @@ export default function HomeScreen() {
     }, [])
   );
 
-
-
-  // resetta asynchstorage 
-  const resetAppData = async () => {
-  try {
-    await AsyncStorage.clear(); // Elimina tutti i dati salvati
-
-    console.log("Tutti i dati dell'app sono stati cancellati.");
-    Alert.alert("Reset completato", "Tutti i dati sono stati eliminati");
-
-    // Pulisce lo stato locale per mostrare subito l'effetto
-    setSerieViste([]);
-    setSerieCompletate([]);
-    setSuggestedSeries([
-      { id: "loadMore", titolo: "Scopri una Nuova Serie" },
-    ]);
-  } catch (error) {
-    console.error("Errore durante il reset dei dati:", error);
-    Alert.alert("Errore", "Non è stato possibile eliminare i dati");
-  }
-};
+ 
 
   //prendo una serie TV casuale dalle più votate
   //diventa un oggetto serie, la salvo in AsyncStorage
@@ -184,6 +164,16 @@ export default function HomeScreen() {
 
 
       const nuovaSerie = dettagli;
+        // Leggo elenco esistente da AsyncStorage 
+      const existingData = await AsyncStorage.getItem("serie.json");
+      const lista: Serie[] = existingData ? JSON.parse(existingData) : [];
+
+      if (!lista.some((s) => s.id === nuovaSerie.id)) {
+        const aggiornata = [...lista, nuovaSerie];
+
+        //salvo su AsyncStorage
+        await AsyncStorage.setItem("serie.json", JSON.stringify(aggiornata));
+      }
 
       // Aggiorna stato locale
       //prendo la serie nuova inserita e quelle precedenti eccetto la card load more
@@ -323,26 +313,7 @@ export default function HomeScreen() {
           contentContainerStyle={styles.horizontalList}
           showsHorizontalScrollIndicator={false}
         />
-        <TouchableOpacity
-          style={styles.resetButton}
-          onPress={() =>
-            Alert.alert(
-              "Conferma Reset",
-              "Sei sicuro di voler eliminare tutti i dati dell'app?",
-              [
-                { text: "Annulla", style: "cancel" },
-                {
-                  text: "Conferma",
-                  style: "destructive",
-                  onPress: resetAppData,
-                },
-              ]
-            )
-          }
-        >
-          <Ionicons name="trash-outline" size={18} color="#fff" />
-          <Text style={styles.resetText}>Resetta tutto</Text>
-        </TouchableOpacity>
+    
       </ScrollView>
 
       <TouchableOpacity
@@ -538,22 +509,5 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontWeight: "500",
   },
-
-  resetButton: {
-    alignSelf: "center",
-    marginVertical: 20,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    backgroundColor: "#cc4949",
-    borderRadius: 20,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-
-  resetText: {
-    color: "#fff",
-    fontSize: 14,
-    fontWeight: "600",
-  },
+  
 });

@@ -88,6 +88,7 @@ const CategorieScreen = () => {
       const caricaCategorie = async () => {
         try {
           const salvate = await AsyncStorage.getItem(STORAGE_KEY);
+          console.log(`le  salvate sono ${salvate}`);
           if (salvate) {
             setCategorie(JSON.parse(salvate));
           } else {

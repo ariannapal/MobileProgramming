@@ -25,21 +25,35 @@ const CategorieScreen = () => {
   const router = useRouter();
   type Categoria = { id: string; nome: string };
 
+  //stato per il setting e l'inserimento di una categoria
   const [categorie, setCategorie] = useState<{
     piattaforme: Categoria[];
     generi: Categoria[];
   }>({ piattaforme: [], generi: [] });
 
+  //numero di serie per categorie
   const [conteggi, setConteggi] = useState<{
+    //creo un oggetto record con due proprieta
     piattaforme: Record<string, number>;
     generi: Record<string, number>;
   }>({ piattaforme: {}, generi: {} });
 
+  //modale di aggiunta della categoria o del genere, inizialmente non visibile
   const [modalVisible, setModalVisible] = useState(false);
+  //testo digitato dall'utente
   const [nomeCategoria, setNomeCategoria] = useState("");
+
+  //indico se lo l'utente aggiunge una piattafotma o un genere
+  //iniziale : piattaforma
   const [tipoCategoria, setTipoCategoria] = useState<"piattaforma" | "genere">(
     "piattaforma"
   );
+
+  //elimino le catagorie
+  //passo l'id e la piattaforma/genere
+  //creo le nuove categorie, filtrando a quelle vecchie l'item da eliminare
+  //sovrascrivo con setCategorie
+  //sovrascrivo in AsyncStorage
   const eliminaCategoria = async (
     id: string,
     tipo: "piattaforme" | "generi"
@@ -52,7 +66,8 @@ const CategorieScreen = () => {
     setCategorie(nuoveCategorie);
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(nuoveCategorie));
   };
-  //funzione per bug fixing in refactoring
+
+  //funzione per bug fixing in refactoring quando ho categorie con id undefined
   useEffect(() => {
     const normalizzaCategorie = async () => {
       //prendo tutto il file delle categorie
@@ -83,14 +98,18 @@ const CategorieScreen = () => {
     normalizzaCategorie();
   }, []);
 
+  //ogni volta che rientro sulla pagina rifaccio il caricamento dall'async
   useFocusEffect(
     useCallback(() => {
       const caricaCategorie = async () => {
         try {
+          //prendo tutte le categorie salvate
           const salvate = await AsyncStorage.getItem(STORAGE_KEY);
           if (salvate) {
+            //aggiorno lo stato facendo parsing
             setCategorie(JSON.parse(salvate));
           } else {
+            //se non ce ne sono prendo quelle hardcoded e le salvo nell'asyncstorage
             setCategorie(categorieJson);
             await AsyncStorage.setItem(
               STORAGE_KEY,
@@ -98,18 +117,23 @@ const CategorieScreen = () => {
             );
           }
 
-          // Carica le serie
+          // Carica le serie per fare il conteggio
           const serieSalvate = await AsyncStorage.getItem(SERIE_KEY);
           const parsedSerie = serieSalvate ? JSON.parse(serieSalvate) : [];
 
+          //inizializzo due variabili record per inserirli nello stato dopo
           const conteggiGeneri: Record<string, number> = {};
           const conteggiPiattaforme: Record<string, number> = {};
 
+          //scorro le seire nle parsing e salto quelle nei suggeriti
           for (const serie of parsedSerie) {
             if (serie.stato === "suggerita") {
               continue; // Salta questa serie
             }
+            //incremento i conteggi in ConteggiGeneri
             if (serie.genere) {
+              //accedo alla chiave, se non esiste la setto a 0 + 1
+              //se esiste prendo il conteggio di prima + 1
               conteggiGeneri[serie.genere] =
                 (conteggiGeneri[serie.genere] || 0) + 1;
             }
@@ -118,7 +142,7 @@ const CategorieScreen = () => {
                 (conteggiPiattaforme[serie.piattaforma] || 0) + 1;
             }
           }
-
+          //setto lo stato
           setConteggi({
             generi: conteggiGeneri,
             piattaforme: conteggiPiattaforme,
@@ -132,16 +156,22 @@ const CategorieScreen = () => {
     }, [])
   );
 
+  //utente aggiunge la categoria
   const aggiungiCategoria = async () => {
+    //prendo il valore dal textinput
     const nomePulito = nomeCategoria.trim().toLowerCase();
     if (!nomePulito) return;
 
+    //prendo la lista in base allo stato che ho settato quando ho premuto +
     const listaEsistente =
       tipoCategoria === "piattaforma"
         ? categorie.piattaforme
         : categorie.generi;
 
+    //verifica esistenza duplicati
+    //some verifica che esista almeno un elemento con quel avlore nella lista
     const esisteGia = listaEsistente.some(
+      //per ogni cat nella lista, prendo il nome e lo pulisco  e lo confronto con nomepulito
       (cat) => cat.nome.trim().toLowerCase() === nomePulito
     );
 
@@ -157,35 +187,37 @@ const CategorieScreen = () => {
       return;
     }
 
+    //setto la nuova categoria con un count pari a 0
     const nuovaCategoria = {
       id: Date.now().toString(),
       nome: nomeCategoria.trim(),
       count: 0,
     };
 
+    //setto un nuovo stato
+    //copio tutte le categorie precedenti (sia piattaforme che generi)
+    //setto il nuovo tipo della categoria
     const nuovoStato = {
       ...categorie,
+      //calcolo chiave, se tipo = piattaforma, la chiave --> piattaforma
       [tipoCategoria === "piattaforma" ? "piattaforme" : "generi"]: [
+        //copio tutti gli elementi gia presenti
         ...listaEsistente,
+        //aggiungo la nuova categoria
         nuovaCategoria,
       ],
     };
 
+    //setto il nuovo stato
     setCategorie(nuovoStato);
+    //aggiorno lo storage
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(nuovoStato));
 
+    //riporto lo stato a quello iniziale
     setNomeCategoria("");
     setTipoCategoria("piattaforma");
     setModalVisible(false);
   };
-  console.log(
-    "Chiavi piattaforme:",
-    categorie.piattaforme.map((p) => p.id)
-  );
-  console.log(
-    "Chiavi generi:",
-    categorie.generi.map((g) => g.id)
-  );
 
   return (
     <SafeAreaView style={styles.container}>

@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useFocusEffect, useIsFocused } from "@react-navigation/native";
+import { useFocusEffect } from "@react-navigation/native";
 import { useRouter } from "expo-router";
 import React, { useCallback, useState } from "react";
 import {
@@ -14,11 +14,10 @@ import {
   View,
 } from "react-native";
 
-
 import { fetchDettagliSerie } from "../../_utils/fetchDettagliSerie";
-import { TMDB_API_TOKEN } from '../../_utils/tmdb-config'
+import { TMDB_API_TOKEN } from "../../_utils/tmdb-config";
 
-// per ogni stagione faccio un tipo 
+// per ogni stagione faccio un tipo
 type StagioneDettaglio = {
   stagione: number;
   episodi: number;
@@ -55,7 +54,7 @@ export default function HomeScreen() {
   //navigazione
   const router = useRouter();
 
-   // Funzione che restituisce l’url dell’immagine da mostrare, o un placeholder se non c’è
+  // Funzione che restituisce l’url dell’immagine da mostrare, o un placeholder se non c’è
   function getImageUri(item: { poster_path?: string; image?: string }): string {
     const path = item.poster_path || item.image;
 
@@ -90,14 +89,21 @@ export default function HomeScreen() {
           const data: Serie[] = json ? JSON.parse(json) : [];
 
           // filtro le serie
-          const serieInCorso = data.filter((serie) => serie.stato?.toLowerCase().trim() === "in corso" );
-          const serieCompletate = data.filter((serie) => serie.stato?.toLowerCase().trim() === "completata");
-          const suggerite = data.filter((serie) => serie.stato?.toLowerCase().trim() === "suggerita");
+          const serieInCorso = data.filter(
+            (serie) => serie.stato?.toLowerCase().trim() === "in corso"
+          );
+          const serieCompletate = data.filter(
+            (serie) => serie.stato?.toLowerCase().trim() === "completata"
+          );
+          const suggerite = data.filter(
+            (serie) => serie.stato?.toLowerCase().trim() === "suggerita"
+          );
 
           //setto i nuovi stati:
           setSerieViste(serieInCorso);
           setSerieCompletate(serieCompletate);
-          setSuggestedSeries([  //inserisco le suggerite nuove + quella di base (per aggiungerne nuove)
+          setSuggestedSeries([
+            //inserisco le suggerite nuove + quella di base (per aggiungerne nuove)
             ...suggerite,
             { id: "loadMore", titolo: "Scopri una Nuova Serie" },
           ]);
@@ -111,27 +117,25 @@ export default function HomeScreen() {
     }, [])
   );
 
-
-
-  // resetta asynchstorage 
+  // resetta asynchstorage
   const resetAppData = async () => {
-  try {
-    await AsyncStorage.clear(); // Elimina tutti i dati salvati
+    try {
+      await AsyncStorage.clear(); // Elimina tutti i dati salvati
 
-    console.log("Tutti i dati dell'app sono stati cancellati.");
-    Alert.alert("Reset completato", "Tutti i dati sono stati eliminati");
+      console.log("Tutti i dati dell'app sono stati cancellati.");
+      Alert.alert("Reset completato", "Tutti i dati sono stati eliminati");
 
-    // Pulisce lo stato locale per mostrare subito l'effetto
-    setSerieViste([]);
-    setSerieCompletate([]);
-    setSuggestedSeries([
-      { id: "loadMore", titolo: "Scopri una Nuova Serie" },
-    ]);
-  } catch (error) {
-    console.error("Errore durante il reset dei dati:", error);
-    Alert.alert("Errore", "Non è stato possibile eliminare i dati");
-  }
-};
+      // Pulisce lo stato locale per mostrare subito l'effetto
+      setSerieViste([]);
+      setSerieCompletate([]);
+      setSuggestedSeries([
+        { id: "loadMore", titolo: "Scopri una Nuova Serie" },
+      ]);
+    } catch (error) {
+      console.error("Errore durante il reset dei dati:", error);
+      Alert.alert("Errore", "Non è stato possibile eliminare i dati");
+    }
+  };
 
   //prendo una serie TV casuale dalle più votate
   //diventa un oggetto serie, la salvo in AsyncStorage
@@ -144,7 +148,7 @@ export default function HomeScreen() {
         `https://api.themoviedb.org/3/tv/top_rated?language=it-IT&page=1`,
         {
           headers: {
-             Authorization: TMDB_API_TOKEN,
+            Authorization: TMDB_API_TOKEN,
             accept: "application/json",
           },
         }
@@ -152,18 +156,17 @@ export default function HomeScreen() {
       if (!res.ok) throw new Error("Errore fetch top rated");
       const data = await res.json();
 
-   
       // set per evitare duplicati -> così non suggerisce serie già suggerite o già in corso/completate
       // ottengo una lista di tutti gli ID già usati
       const serieEsistenti = new Set([
-        ...serieViste.map(s => s.id),
-        ...serieCompletate.map(s => s.id),
-        ...suggestedSeries.map(s => s.id),
+        ...serieViste.map((s) => s.id),
+        ...serieCompletate.map((s) => s.id),
+        ...suggestedSeries.map((s) => s.id),
       ]);
 
       // filtro le serie disponibili (quelle prese da API) escludendo tutte quelle presenti (in serieEsistenti)
       const serieDisponibili = data.results.filter(
-        (s: any) => !serieEsistenti.has(s.id?.toString())   
+        (s: any) => !serieEsistenti.has(s.id?.toString())
       );
 
       //caso tutte le serie sono state già suggerite
@@ -171,27 +174,30 @@ export default function HomeScreen() {
         console.warn("Nessuna nuova serie da suggerire");
         return;
       }
-     
+
       // scelgo una serie casuale tra quelle disponibili, e la salvo in show
       const randomIndex = Math.floor(Math.random() * serieDisponibili.length);
       const show = serieDisponibili[randomIndex];
 
       // chiamo funzione per ottenere tutti i dettagli
-      const dettagli = await fetchDettagliSerie(show.id,"Netflix","suggerita" );
+      const dettagli = await fetchDettagliSerie(
+        show.id,
+        "Netflix",
+        "suggerita"
+      );
       if (!dettagli) {
         throw new Error("Errore nel recupero dettagli serie");
       }
-
 
       const nuovaSerie = dettagli;
 
       // Aggiorna stato locale
       //prendo la serie nuova inserita e quelle precedenti eccetto la card load more
       setSuggestedSeries((prev) => [
-  ...prev.filter((item) => item.id !== "loadMore"),
-  nuovaSerie,
-  { id: "loadMore", titolo: "Scopri una Nuova Serie" },
-]);
+        ...prev.filter((item) => item.id !== "loadMore"),
+        nuovaSerie,
+        { id: "loadMore", titolo: "Scopri una Nuova Serie" },
+      ]);
     } catch (err) {
       console.error("Errore fetch nuova serie:", err);
     }
@@ -208,8 +214,7 @@ export default function HomeScreen() {
       );
     }
     const imageUri = getImageUri(item);
-    
-   
+
     // Card  che porta alla pagina dettagli della serie
     const content = (
       <TouchableOpacity
@@ -250,7 +255,6 @@ export default function HomeScreen() {
     return content;
   };
 
-  
   // Se non ci sono serie in nessuna lista, mostro schermata vuota con invito ad aggiungere
   if (
     serieViste.length === 0 &&
@@ -277,7 +281,7 @@ export default function HomeScreen() {
     );
   }
 
-   // Altrimenti mostro la schermata con liste di serie in corso, completate e suggerite
+  // Altrimenti mostro la schermata con liste di serie in corso, completate e suggerite
   return (
     <View style={styles.container}>
       <View style={styles.searchRow}>
@@ -323,26 +327,6 @@ export default function HomeScreen() {
           contentContainerStyle={styles.horizontalList}
           showsHorizontalScrollIndicator={false}
         />
-        <TouchableOpacity
-          style={styles.resetButton}
-          onPress={() =>
-            Alert.alert(
-              "Conferma Reset",
-              "Sei sicuro di voler eliminare tutti i dati dell'app?",
-              [
-                { text: "Annulla", style: "cancel" },
-                {
-                  text: "Conferma",
-                  style: "destructive",
-                  onPress: resetAppData,
-                },
-              ]
-            )
-          }
-        >
-          <Ionicons name="trash-outline" size={18} color="#fff" />
-          <Text style={styles.resetText}>Resetta tutto</Text>
-        </TouchableOpacity>
       </ScrollView>
 
       <TouchableOpacity

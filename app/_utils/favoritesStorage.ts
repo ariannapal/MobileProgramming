@@ -2,6 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const STORAGE_KEY = "FAVORITI";
 
+//creo un alias type 
 export type FavoriteItem = {
   id: string;
   titolo: string;
@@ -10,6 +11,7 @@ export type FavoriteItem = {
   anno?: number;
 };
 
+//funzione di normalizzazione, mi ritorna un favorito 
 function normalizeSerie(item: any): FavoriteItem {
   return {
     id: String(item.id),

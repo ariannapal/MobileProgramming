@@ -13,18 +13,18 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import Animated, { FadeInLeft } from "react-native-reanimated";
+
 
 import { fetchDettagliSerie } from "../../_utils/fetchDettagliSerie";
 import { TMDB_API_TOKEN } from '../../_utils/tmdb-config'
 
-// per ogni stagione faccio un tipo
+// per ogni stagione faccio un tipo 
 type StagioneDettaglio = {
   stagione: number;
   episodi: number;
 };
 
-//singola serie
+//tipo di una  serie
 type Serie = {
   id?: string;
   titolo: string;
@@ -51,29 +51,24 @@ export default function HomeScreen() {
     //stato iniziale, vuoto con la scheda di scoperta nuova serie
     { id: "loadMore", titolo: "Scopri una Nuova Serie" },
   ]);
-  //prendo il focus
-  const isFocused = useIsFocused();
 
   //navigazione
   const router = useRouter();
 
-  //immagine da mostrare, prende in ingresso un item che se ha un poster_path è una stringa
-  //e se ha un'immagine è una stringa
+   // Funzione che restituisce l’url dell’immagine da mostrare, o un placeholder se non c’è
   function getImageUri(item: { poster_path?: string; image?: string }): string {
     const path = item.poster_path || item.image;
 
     if (!path) {
       return "https://via.placeholder.com/120x180?text=?";
     }
-
     if (path.startsWith("file://") || path.startsWith("http")) {
       return path;
     }
-
     return `https://image.tmdb.org/t/p/w185${path}`;
   }
 
-  //stato vuoto --> Card di aggiunta serie in corso o completata
+  //se lo stato è vuoto --> Card di aggiunta serie in corso o completata
   const renderEmptyState = (messaggio: string) => (
     <TouchableOpacity
       style={styles.actionCard}
@@ -84,39 +79,25 @@ export default function HomeScreen() {
     </TouchableOpacity>
   );
 
-  //ogni volta che tonro sulla home, aggiorno visualizzazione di serie completate, in corso e suggerite
+  //ogni volta che tonro sulla home, aggiorno la visualizzazione prendendo le serie da AsyncStorage
   useFocusEffect(
     useCallback(() => {
       const loadSerie = async () => {
         try {
           //prendo i dati con una promise dall'asyncstorage
           const json = await AsyncStorage.getItem("serie.json");
-          //i dati devono essere di tipo serie se il parsing restituisce qualcosa lo inserisco
-          // altrimenti array vuoto
+          //i dati devono essere di tipo serie se il parsing restituisce qualcosa lo inserisco, altrimenti array vuoto
           const data: Serie[] = json ? JSON.parse(json) : [];
 
-          //prendo solo le serieincorso filtrando da data per ogni serie,
-          //il campo stato deve essere in corso
-          const serieInCorso = data.filter(
-            (serie) => serie.stato?.toLowerCase().trim() === "in corso"
-          );
+          // filtro le serie
+          const serieInCorso = data.filter((serie) => serie.stato?.toLowerCase().trim() === "in corso" );
+          const serieCompletate = data.filter((serie) => serie.stato?.toLowerCase().trim() === "completata");
+          const suggerite = data.filter((serie) => serie.stato?.toLowerCase().trim() === "suggerita");
 
-          //prendo solo le seriefinite filtrando da data per ogni serie,
-          //il campo stato deve essere completata
-          const serieFatte = data.filter(
-            (serie) => serie.stato?.toLowerCase().trim() === "completata"
-          );
-          //prendo solo le suggerite filtrando da data per ogni serie,
-          //il campo stato deve essere suggerita
-          const suggerite = data.filter(
-            (serie) => serie.stato?.toLowerCase().trim() === "suggerita"
-          );
-          //setto il nuovo stato delle viste, delle completate e delle suggerite
+          //setto i nuovi stati:
           setSerieViste(serieInCorso);
-          setSerieCompletate(serieFatte);
-
-          //inserisco le suggerite nuove + quella di base (stato 0)
-          setSuggestedSeries([
+          setSerieCompletate(serieCompletate);
+          setSuggestedSeries([  //inserisco le suggerite nuove + quella di base (per aggiungerne nuove)
             ...suggerite,
             { id: "loadMore", titolo: "Scopri una Nuova Serie" },
           ]);
@@ -124,52 +105,41 @@ export default function HomeScreen() {
           console.error("Errore nel caricamento delle serie:", err);
         }
       };
+
       // Avvio la funzione di caricamento asincrono
       loadSerie();
     }, [])
   );
 
+
+
+  // resetta asynchstorage 
   const resetAppData = async () => {
-    try {
-      const keys = await AsyncStorage.getAllKeys();
+  try {
+    await AsyncStorage.clear(); // Elimina tutti i dati salvati
 
-      // Filtra solo le chiavi che usi nella tua app
-      const relevantKeys = keys.filter(
-        (key) =>
-          key === "serie.json" ||
-          key.startsWith("episodiVisti-") ||
-          key.startsWith("preferiti") || // include sia "preferiti" che "preferiti-xyz"
-          key.startsWith("isFavorite") // opzionale, se usi questo schema
-      );
+    console.log("Tutti i dati dell'app sono stati cancellati.");
+    Alert.alert("Reset completato", "Tutti i dati sono stati eliminati");
 
-      if (relevantKeys.length > 0) {
-        await AsyncStorage.clear();
-
-        console.log("Dati dell'app resettati:", relevantKeys);
-        Alert.alert("Reset completato", "Tutti i dati sono stati eliminati");
-      } else {
-        Alert.alert("Nessun dato da cancellare");
-      }
-
-      // Pulisce lo stato locale per mostrare subito l'effetto
-      setSerieViste([]);
-      setSerieCompletate([]);
-      setSuggestedSeries([
-        { id: "loadMore", titolo: "Scopri una Nuova Serie" },
-      ]);
-    } catch (error) {
-      console.error("Errore durante il reset dei dati:", error);
-      Alert.alert("Errore", "Non è stato possibile eliminare i dati");
-    }
-  };
+    // Pulisce lo stato locale per mostrare subito l'effetto
+    setSerieViste([]);
+    setSerieCompletate([]);
+    setSuggestedSeries([
+      { id: "loadMore", titolo: "Scopri una Nuova Serie" },
+    ]);
+  } catch (error) {
+    console.error("Errore durante il reset dei dati:", error);
+    Alert.alert("Errore", "Non è stato possibile eliminare i dati");
+  }
+};
 
   //prendo una serie TV casuale dalle più votate
-  //diventa un oggetto serie, la salvo in AsyncStor
+  //diventa un oggetto serie, la salvo in AsyncStorage
   //aggiungo ai suggerimenti
   //la uso in renderItem quando id = loadmore
   const fetchNuovaSerie = async () => {
     try {
-      // Fetch serie top rated
+      // Fetch serie fra le top rated
       const res = await fetch(
         `https://api.themoviedb.org/3/tv/top_rated?language=it-IT&page=1`,
         {
@@ -179,22 +149,21 @@ export default function HomeScreen() {
           },
         }
       );
-
       if (!res.ok) throw new Error("Errore fetch top rated");
-
       const data = await res.json();
 
-      // Evitiamo duplicati
-      //suggestedSeries stato e array delle serie suggerite
-      //nel set, per ogni serie mappo solo il suo id
-      //set --> senza duplicati
-      //risultato: serie nei suggeriti sempre diverse dalle presenti
-      const serieEsistenti = new Set(suggestedSeries.map((s) => s.id));
+   
+      // set per evitare duplicati -> così non suggerisce serie già suggerite o già in corso/completate
+      // ottengo una lista di tutti gli ID già usati
+      const serieEsistenti = new Set([
+        ...serieViste.map(s => s.id),
+        ...serieCompletate.map(s => s.id),
+        ...suggestedSeries.map(s => s.id),
+      ]);
 
-      //disponibili le serie che ha dato l'API
-      //con filter mantengo solo quelle che non hanno corrispondenza in SerieEsisenti
+      // filtro le serie disponibili (quelle prese da API) escludendo tutte quelle presenti (in serieEsistenti)
       const serieDisponibili = data.results.filter(
-        (s: any) => !serieEsistenti.has(s.id?.toString())
+        (s: any) => !serieEsistenti.has(s.id?.toString())   
       );
 
       //caso tutte le serie sono state già suggerite
@@ -202,48 +171,36 @@ export default function HomeScreen() {
         console.warn("Nessuna nuova serie da suggerire");
         return;
       }
-      //calcola un numero casuale dalle serie disponibili
+     
+      // scelgo una serie casuale tra quelle disponibili, e la salvo in show
       const randomIndex = Math.floor(Math.random() * serieDisponibili.length);
-      //salvo in show la serie casuale scelta con un indice casuale
       const show = serieDisponibili[randomIndex];
 
-      // Ottieni dettagli completi con episodiPerStagione ecc.
-      const dettagli = await fetchDettagliSerie(
-        show.id,
-        "Netflix",
-        "suggerita"
-      );
-
+      // chiamo funzione per ottenere tutti i dettagli
+      const dettagli = await fetchDettagliSerie(show.id,"Netflix","suggerita" );
       if (!dettagli) {
         throw new Error("Errore nel recupero dettagli serie");
       }
 
-      //inserisco la nuova serie con i suoi dettagli nei suggeriti
-      // Inserisco la nuova serie con i suoi dettagli nei suggeriti
+    // Aggiungo la nuova serie alla lista salvata in AsyncStorage
       const nuovaSerie = dettagli;
-
-      // Leggo elenco esistente da AsyncStorage
       const existingData = await AsyncStorage.getItem("serie.json");
       const lista: Serie[] = existingData ? JSON.parse(existingData) : [];
-
-      // Controllo duplicati anche qui, per sicurezza
-      if (!lista.some((s) => s.id === nuovaSerie.id)) {
-        const aggiornata = [...lista, nuovaSerie];
-        await AsyncStorage.setItem("serie.json", JSON.stringify(aggiornata));
-      }
+    
 
       // Aggiorna stato locale
       //prendo la serie nuova inserita e quelle precedenti eccetto la card load more
       setSuggestedSeries((prev) => [
-        nuovaSerie,
-        ...prev.filter((item) => item.id !== "loadMore"),
-        { id: "loadMore", titolo: "Scopri una Nuova Serie" },
-      ]);
+  ...prev.filter((item) => item.id !== "loadMore"),
+  nuovaSerie,
+  { id: "loadMore", titolo: "Scopri una Nuova Serie" },
+]);
     } catch (err) {
       console.error("Errore fetch nuova serie:", err);
     }
   };
 
+  // render della card 'scopri nuova serie'
   const renderItem = ({ item, index }: { item: Serie; index: number }) => {
     if (item.id === "loadMore") {
       return (
@@ -253,7 +210,6 @@ export default function HomeScreen() {
         </TouchableOpacity>
       );
     }
-
     const imageUri = getImageUri(item);
     const completamentoPercentuale =
       item.stagioniDettagli && item.stagioniDettagli.length > 0
@@ -268,6 +224,7 @@ export default function HomeScreen() {
           })()
         : 0;
 
+    // Card  che porta alla pagina dettagli della serie
     const content = (
       <TouchableOpacity
         style={styles.card}
@@ -304,14 +261,11 @@ export default function HomeScreen() {
       </TouchableOpacity>
     );
 
-    return isFocused ? (
-      <Animated.View entering={FadeInLeft.duration(400).delay(index * 80)}>
-        {content}
-      </Animated.View>
-    ) : (
-      content
-    );
+    return content;
   };
+
+  
+  // Se non ci sono serie in nessuna lista, mostro schermata vuota con invito ad aggiungere
   if (
     serieViste.length === 0 &&
     serieCompletate.length === 0 &&
@@ -337,6 +291,7 @@ export default function HomeScreen() {
     );
   }
 
+   // Altrimenti mostro la schermata con liste di serie in corso, completate e suggerite
   return (
     <View style={styles.container}>
       <View style={styles.searchRow}>

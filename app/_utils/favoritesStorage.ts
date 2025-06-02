@@ -32,7 +32,7 @@ export async function saveFavorite(item: any): Promise<void> {
   const favorites = await getFavorites();
   const cleanedItem = normalizeSerie(item);
 
-  // controllo ID su stringa, sempre
+  // controllo ID su stringa
   const exists = favorites.some((f) => String(f.id) === String(cleanedItem.id));
 
   const updated = exists

@@ -10,8 +10,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import HeaderSearchBar from "./components/headerSearchBar"; // modifica il path se necessario
-
+import HeaderSearchBar from "./components/headerSearchBar"; 
 import { useFocusEffect } from "@react-navigation/native";
 export default function SearchScreen() {
   const [titolo, setTitolo] = useState("");

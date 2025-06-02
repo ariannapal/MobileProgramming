@@ -1,4 +1,4 @@
-// utils/fetchDettagliSerie.ts
+import { TMDB_API_TOKEN } from './tmdb-config';
 
 export type Serie = {
     id: string;
@@ -27,8 +27,7 @@ export type Serie = {
         `https://api.themoviedb.org/3/tv/${id}?language=it-IT`,
         {
           headers: {
-            Authorization:
-              "Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiIxYWMxMzU4NjY3ZjcyODgzNWRhZjk2YjAxZDZkODVhMCIsIm5iZiI6MTc0Njc3ODg1MC4zMTcsInN1YiI6IjY4MWRiYWUyM2E2OGExMTcyOTYzYmQxNiIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.I6RbtWrCPo0n0YWNYNfGs0wnAcIrG0n5t4KYh0W7Am4",
+           Authorization: TMDB_API_TOKEN,
             accept: "application/json",
           },
         }
@@ -50,8 +49,8 @@ export type Serie = {
         titolo: data.name,
         trama: data.overview,
         genere: genereOverride ?? (data.genres?.[0]?.name || ""),
-        piattaforma: piattaforma ?? "", // puoi passarlo dall’esterno
-        stato: stato ?? "", // es. “suggerita” o “in corso”
+        piattaforma: piattaforma ?? "",
+        stato: stato ?? "", 
         stagioni: data.number_of_seasons,
         episodi: data.number_of_episodes,
         poster_path: data.poster_path,

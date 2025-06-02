@@ -15,6 +15,7 @@ import {
   View,
 } from "react-native";
 import { fetchDettagliSerie } from "../../_utils/fetchDettagliSerie";
+import { TMDB_API_TOKEN } from '../../_utils/tmdb-config'
 
 // per ogni stagione faccio un tipo
 type StagioneDettaglio = {
@@ -166,8 +167,7 @@ export default function HomeScreen() {
         `https://api.themoviedb.org/3/tv/top_rated?language=it-IT&page=1`,
         {
           headers: {
-            Authorization:
-              "Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiIxYWMxMzU4NjY3ZjcyODgzNWRhZjk2YjAxZDZkODVhMCIsIm5iZiI6MTc0Njc3ODg1MC4zMTcsInN1YiI6IjY4MWRiYWUyM2E2OGExMTcyOTYzYmQxNiIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.I6RbtWrCPo0n0YWNYNfGs0wnAcIrG0n5t4KYh0W7Am4",
+             Authorization: TMDB_API_TOKEN,
             accept: "application/json",
           },
         }

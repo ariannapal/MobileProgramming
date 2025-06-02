@@ -13,6 +13,7 @@ import {
   View,
 } from "react-native";
 import HeaderSearchBar from "./components/headerSearchBar";
+import { TMDB_API_TOKEN } from './_utils/tmdb-config'; 
 
 export default function AggiungiModificaScreen() {
   const router = useRouter();
@@ -30,8 +31,7 @@ export default function AggiungiModificaScreen() {
         )}&language=it-IT`,
         {
           headers: {
-            Authorization:
-              "Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiIxYWMxMzU4NjY3ZjcyODgzNWRhZjk2YjAxZDZkODVhMCIsIm5iZiI6MTc0Njc3ODg1MC4zMTcsInN1YiI6IjY4MWRiYWUyM2E2OGExMTcyOTYzYmQxNiIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.I6RbtWrCPo0n0YWNYNfGs0wnAcIrG0n5t4KYh0W7Am4",
+            Authorization: TMDB_API_TOKEN,
             accept: "application/json",
           },
         }
@@ -41,9 +41,8 @@ export default function AggiungiModificaScreen() {
         `https://api.themoviedb.org/3/genre/tv/list?language=it-IT`,
         {
           headers: {
-            Authorization:
-              "Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiIxYWMxMzU4NjY3ZjcyODgzNWRhZjk2YjAxZDZkODVhMCIsIm5iZiI6MTc0Njc3ODg1MC4zMTcsInN1YiI6IjY4MWRiYWUyM2E2OGExMTcyOTYzYmQxNiIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.I6RbtWrCPo0n0YWNYNfGs0wnAcIrG0n5t4KYh0W7Am4",
-            accept: "application/json",
+              Authorization: TMDB_API_TOKEN,
+               accept: "application/json",
           },
         }
       );
@@ -84,7 +83,7 @@ export default function AggiungiModificaScreen() {
         rating: item.vote_average?.toFixed(1) || "",
         anno: item.first_air_date?.substring(0, 4) || "",
         genere: item.genere_nome || "",
-        piattaforma: "", // opzionale
+        piattaforma: "", 
       },
     });
   };

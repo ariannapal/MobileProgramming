@@ -187,7 +187,11 @@ const StatisticheScreen = () => {
 
   /* Se le statistiche non sono ancora caricate, mostra messaggio di caricamento */
   if (!statistiche) {
-    return <Text style={styles.loadingText}>Caricamento...</Text>;
+    return (
+      <View style={[styles.container, { justifyContent: "center", alignItems: "center" }]}>
+        <Text style={styles.loadingText}>Caricamento...</Text>
+      </View>
+    );
   }
 
   /* Componente placeholder mostrato se non ci sono dati per i grafici */

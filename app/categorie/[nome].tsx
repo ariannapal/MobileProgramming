@@ -39,10 +39,10 @@ export default function CategoriaScreen() {
         const tutteLeSerie: Serie[] = data ? JSON.parse(data) : [];
 
         const filtrate = tutteLeSerie.filter(
-           (s) =>
+          (s) =>
             s.stato !== "suggerita" &&
-           (s.genere === nome || s.piattaforma === nome)
-          );
+            (s.genere === nome || s.piattaforma === nome)
+        );
 
         // Recupera i rating da AsyncStorage
         const arricchite = await Promise.all(
@@ -132,9 +132,26 @@ export default function CategoriaScreen() {
             </Pressable>
           )}
           ListEmptyComponent={
-            <Text style={{ color: "#aaa", textAlign: "center" }}>
-              Nessuna serie trovata.
-            </Text>
+            <View
+              style={{
+                flex: 1,
+                alignItems: "center",
+                justifyContent: "center",
+                paddingVertical: 40,
+              }}
+            >
+              <Ionicons
+                name="tv-outline"
+                size={40}
+                color="#6c2bd9"
+                style={{ marginBottom: 10 }}
+              />
+              <Text
+                style={{ color: "#aaa", textAlign: "center", fontSize: 14 }}
+              >
+                Nessuna serie trovata
+              </Text>
+            </View>
           }
         />
       </View>
@@ -145,7 +162,7 @@ export default function CategoriaScreen() {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: "#0c0c1e",
+    backgroundColor: "#0f0f2a",
   },
   container: {
     flex: 1,

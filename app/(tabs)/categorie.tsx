@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect } from "@react-navigation/native";
 import { useRouter } from "expo-router";
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 
 import {
   Alert,
@@ -52,6 +52,36 @@ const CategorieScreen = () => {
     setCategorie(nuoveCategorie);
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(nuoveCategorie));
   };
+  //funzione per bug fixing in refactoring
+  useEffect(() => {
+    const normalizzaCategorie = async () => {
+      //prendo tutto il file delle categorie
+      const raw = await AsyncStorage.getItem("categorie_dati");
+      if (!raw) return;
+
+      const parsed = JSON.parse(raw);
+
+      let modificato = false;
+
+      //se ci sono degli id di generi undefined genero l'id anche per loro
+      parsed.generi = parsed.generi.map((g: any) => {
+        if (!g.id) {
+          modificato = true;
+          return {
+            ...g,
+            id: `${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+          };
+        }
+        return g;
+      });
+      //se ho modificato un id sovrascrivo tutto
+      if (modificato) {
+        await AsyncStorage.setItem("categorie_dati", JSON.stringify(parsed));
+      }
+    };
+
+    normalizzaCategorie();
+  }, []);
 
   useFocusEffect(
     useCallback(() => {
@@ -148,6 +178,14 @@ const CategorieScreen = () => {
     setTipoCategoria("piattaforma");
     setModalVisible(false);
   };
+  console.log(
+    "Chiavi piattaforme:",
+    categorie.piattaforme.map((p) => p.id)
+  );
+  console.log(
+    "Chiavi generi:",
+    categorie.generi.map((g) => g.id)
+  );
 
   return (
     <SafeAreaView style={styles.container}>
@@ -206,30 +244,36 @@ const CategorieScreen = () => {
           </Pressable>
         </View>
 
-        {categorie.generi.map((item) => (
-          <Pressable
-            key={item.id}
-            style={styles.riga}
-            onPress={() =>
-              router.push(`/categorie/${encodeURIComponent(item.nome)}`)
-            }
-            onLongPress={() =>
-              Alert.alert("Elimina genere", `Vuoi eliminare "${item.nome}"?`, [
-                { text: "Annulla", style: "cancel" },
-                {
-                  text: "Elimina",
-                  style: "destructive",
-                  onPress: () => eliminaCategoria(item.id, "generi"),
-                },
-              ])
-            }
-          >
-            <Text style={styles.nome}>{item.nome}</Text>
-            <Text style={styles.contatore}>
-              ({conteggi.generi[item.nome] || 0} serie)
-            </Text>
-          </Pressable>
-        ))}
+        {categorie.generi
+          .filter((item) => item?.id !== undefined)
+          .map((item) => (
+            <Pressable
+              key={item.id}
+              style={styles.riga}
+              onPress={() =>
+                router.push(`/categorie/${encodeURIComponent(item.nome)}`)
+              }
+              onLongPress={() =>
+                Alert.alert(
+                  "Elimina genere",
+                  `Vuoi eliminare "${item.nome}"?`,
+                  [
+                    { text: "Annulla", style: "cancel" },
+                    {
+                      text: "Elimina",
+                      style: "destructive",
+                      onPress: () => eliminaCategoria(item.id, "generi"),
+                    },
+                  ]
+                )
+              }
+            >
+              <Text style={styles.nome}>{item.nome}</Text>
+              <Text style={styles.contatore}>
+                ({conteggi.generi[item.nome] || 0} serie)
+              </Text>
+            </Pressable>
+          ))}
 
         {/* MODALE */}
         <Modal

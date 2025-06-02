@@ -36,13 +36,11 @@ export default function ModificaScreen() {
   //Se params.id è undefined o null, allora id = undefined → !!id = false
   //stato episodi modificati
   const [episodiInput, setEpisodiInput] = useState<string[]>([]);
-  const [posterLoading, setPosterLoading] = useState(false);
 
   const tmdbId = Array.isArray(params.tmdbId)
     ? params.tmdbId[0]
     : params.tmdbId;
 
-  //soggetto a cambiamento
   const [categorieGeneri, setCategorieGeneri] = useState<string[]>([]);
   const [categoriePiattaforme, setCategoriePiattaforme] = useState<string[]>(
     []
@@ -204,7 +202,7 @@ export default function ModificaScreen() {
     setEpisodiInput(stagioniDettagli.map((s) => s.episodi.toString()));
   }, [stagioniDettagli]);
 
-  //Carica le categorie da AsyncStorage per dropdown
+  //Carica le categorie da AsyncStorage per dropdown e hardcoded
   useEffect(() => {
     const caricaCategorie = async () => {
       try {

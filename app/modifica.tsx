@@ -346,6 +346,50 @@ export default function ModificaScreen() {
         const key = `episodiVisti-${nuovaSerie.id}`;
         await AsyncStorage.setItem(key, JSON.stringify(episodiVistiTotali));
       }
+      //salvo la nuova categoria inserita se non era già presente
+      try {
+        const categorieRaw = await AsyncStorage.getItem("categorie_dati");
+        const categorie = categorieRaw
+          ? JSON.parse(categorieRaw)
+          : { generi: [], piattaforme: [] };
+
+        //prendo il genere e la piattaforma della nuova serie
+        const nuovoGenere = nuovaSerie.genere?.trim();
+        const nuovaPiattaforma = nuovaSerie.piattaforma?.trim();
+
+        let modificato = false;
+        //se non ci sono duplicati sui generi pusho
+        if (
+          nuovoGenere &&
+          !categorie.generi.some((g: any) => g.nome === nuovoGenere)
+        ) {
+          categorie.generi.push({
+            id: `${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+            nome: nuovoGenere,
+          });
+          modificato = true;
+        }
+        //stessa cosa per la piattaforma
+        if (
+          nuovaPiattaforma &&
+          !categorie.piattaforme.some((p: any) => p.nome === nuovaPiattaforma)
+        ) {
+          categorie.piattaforme.push({
+            id: `${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+            nome: nuovaPiattaforma,
+          });
+          modificato = true;
+        }
+        //se è stato modificato sovracsrivo
+        if (modificato) {
+          await AsyncStorage.setItem(
+            "categorie_dati",
+            JSON.stringify(categorie)
+          );
+        }
+      } catch (err) {
+        console.error("Errore aggiornamento categorie:", err);
+      }
 
       router.replace("/home");
     } catch (err) {

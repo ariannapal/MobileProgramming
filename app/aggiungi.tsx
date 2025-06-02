@@ -107,12 +107,12 @@ export default function AggiungiModificaScreen() {
           ListHeaderComponent={
             <>
               <HeaderSearchBar value={titolo ?? ""} onChange={setTitolo} />
-                <ActivityIndicator
-                  color="#fff"
-                  size="large"
-                  style={{ marginTop: 20 }}
-                  animating={loading}
-                />
+              <ActivityIndicator
+                color="#fff"
+                size="large"
+                style={{ marginTop: 20 }}
+                animating={loading}
+              />
             </>
           }
           renderItem={({ item }) => (

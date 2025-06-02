@@ -1,11 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useFocusEffect } from "@react-navigation/native";
+import { useFocusEffect, useIsFocused } from "@react-navigation/native";
 import { useRouter } from "expo-router";
 import React, { useCallback, useState } from "react";
 import {
   Alert,
-  Button,
   FlatList,
   Image,
   ScrollView,
@@ -14,6 +13,8 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import Animated, { FadeInLeft } from "react-native-reanimated";
+
 import { fetchDettagliSerie } from "../../_utils/fetchDettagliSerie";
 import { TMDB_API_TOKEN } from '../../_utils/tmdb-config'
 
@@ -48,8 +49,10 @@ export default function HomeScreen() {
   //stato per il rendering delle serie suggerite
   const [suggestedSeries, setSuggestedSeries] = useState<Serie[]>([
     //stato iniziale, vuoto con la scheda di scoperta nuova serie
-    { id: "loadMore", titolo: "Scopri nuova serie" },
+    { id: "loadMore", titolo: "Scopri una Nuova Serie" },
   ]);
+  //prendo il focus
+  const isFocused = useIsFocused();
 
   //navigazione
   const router = useRouter();
@@ -71,16 +74,16 @@ export default function HomeScreen() {
   }
 
   //stato vuoto --> Card di aggiunta serie in corso o completata
-  const renderEmptyState = (message: string) => (
+  const renderEmptyState = (messaggio: string) => (
     <TouchableOpacity
-      style={styles.addButtonCard}
-      //stack schermata di aggiunta
+      style={styles.actionCard}
       onPress={() => router.push("/aggiungi")}
     >
-      <Ionicons name="add-circle" size={50} color="#aaa" />
-      <Text style={styles.addButtonText}>{message}</Text>
+      <Ionicons name="add-circle-outline" size={48} color="#6c2bd9" />
+      <Text style={styles.actionCardText}>{messaggio}</Text>
     </TouchableOpacity>
   );
+
   //ogni volta che tonro sulla home, aggiorno visualizzazione di serie completate, in corso e suggerite
   useFocusEffect(
     useCallback(() => {
@@ -115,7 +118,7 @@ export default function HomeScreen() {
           //inserisco le suggerite nuove + quella di base (stato 0)
           setSuggestedSeries([
             ...suggerite,
-            { id: "loadMore", titolo: "Scopri nuova serie" },
+            { id: "loadMore", titolo: "Scopri una Nuova Serie" },
           ]);
         } catch (err) {
           console.error("Errore nel caricamento delle serie:", err);
@@ -135,11 +138,13 @@ export default function HomeScreen() {
         (key) =>
           key === "serie.json" ||
           key.startsWith("episodiVisti-") ||
-          key === "preferiti"
+          key.startsWith("preferiti") || // include sia "preferiti" che "preferiti-xyz"
+          key.startsWith("isFavorite") // opzionale, se usi questo schema
       );
 
       if (relevantKeys.length > 0) {
-        await AsyncStorage.multiRemove(relevantKeys);
+        await AsyncStorage.clear();
+
         console.log("Dati dell'app resettati:", relevantKeys);
         Alert.alert("Reset completato", "Tutti i dati sono stati eliminati");
       } else {
@@ -149,7 +154,9 @@ export default function HomeScreen() {
       // Pulisce lo stato locale per mostrare subito l'effetto
       setSerieViste([]);
       setSerieCompletate([]);
-      setSuggestedSeries([{ id: "loadMore", titolo: "Scopri nuova serie" }]);
+      setSuggestedSeries([
+        { id: "loadMore", titolo: "Scopri una Nuova Serie" },
+      ]);
     } catch (error) {
       console.error("Errore durante il reset dei dati:", error);
       Alert.alert("Errore", "Non è stato possibile eliminare i dati");
@@ -230,65 +237,105 @@ export default function HomeScreen() {
       setSuggestedSeries((prev) => [
         nuovaSerie,
         ...prev.filter((item) => item.id !== "loadMore"),
-        { id: "loadMore", titolo: "Scopri nuova serie" },
+        { id: "loadMore", titolo: "Scopri una Nuova Serie" },
       ]);
     } catch (err) {
       console.error("Errore fetch nuova serie:", err);
     }
   };
 
-  const renderItem = ({ item }: { item: Serie }) => {
-    //renderizzo la card di scoperta nuova serie
+  const renderItem = ({ item, index }: { item: Serie; index: number }) => {
     if (item.id === "loadMore") {
       return (
-        <TouchableOpacity
-          style={styles.addButtonCard}
-          onPress={fetchNuovaSerie}
-        >
-          <Ionicons name="add-circle" size={50} color="#fff" />
-          <Text style={styles.addButtonText}>Scopri nuova serie</Text>
+        <TouchableOpacity style={styles.actionCard} onPress={fetchNuovaSerie}>
+          <Ionicons name="add-circle-outline" size={48} color="#6c2bd9" />
+          <Text style={styles.actionCardText}>Scopri una Nuova Serie</Text>
         </TouchableOpacity>
       );
     }
-    //prendo il path dell'immagine dalla funzione
-    const imageUri = getImageUri(item);
 
-    //caso card normale
-    return (
-      //card tipo bottone
+    const imageUri = getImageUri(item);
+    const completamentoPercentuale =
+      item.stagioniDettagli && item.stagioniDettagli.length > 0
+        ? (() => {
+            const totEpisodi = item.stagioniDettagli.reduce(
+              (acc, s) => acc + (s.episodi || 0),
+              0
+            );
+            const key = `episodiVisti-${item.id}`;
+            // puoi accedere ad AsyncStorage se vuoi dinamicamente, oppure...
+            return totEpisodi > 0 && item.stato === "Completata" ? 1 : 0;
+          })()
+        : 0;
+
+    const content = (
       <TouchableOpacity
         style={styles.card}
         onPress={async () => {
-          //leggo il contenuto di serie.json nell'Async
           const data = await AsyncStorage.getItem("serie.json");
-
-          //trasformo in una lista con il parser
           const lista = data ? JSON.parse(data) : [];
-
-          //se esiste già lo stesso componente nella lista da true
-          //item parametro passato dalla flatlist
           const esiste = lista.some((s: Serie) => s.id === item.id);
 
-          //se non è presente la aggiungo
           if (!esiste && item.id && item.titolo) {
-            //prendo la lista di prima + l'item nuovo
             const nuovaLista = [...lista, item];
             await AsyncStorage.setItem(
               "serie.json",
               JSON.stringify(nuovaLista)
             );
           }
-          //dopo salvataggio passo a serie/id
+
           router.push(`/serie/${encodeURIComponent(item.id || item.titolo)}`);
         }}
       >
         <Image source={{ uri: imageUri }} style={styles.image} />
-        <Text style={styles.title} numberOfLines={2}>
-          {item.titolo}
-        </Text>
+        <View style={styles.imageOverlay}>
+          <Text style={styles.title} numberOfLines={2}>
+            {item.titolo}
+          </Text>
+          {item.stato && (
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>
+                {item.stato.charAt(0).toUpperCase() +
+                  item.stato.slice(1).toLowerCase()}
+              </Text>
+            </View>
+          )}
+        </View>
       </TouchableOpacity>
     );
+
+    return isFocused ? (
+      <Animated.View entering={FadeInLeft.duration(400).delay(index * 80)}>
+        {content}
+      </Animated.View>
+    ) : (
+      content
+    );
   };
+  if (
+    serieViste.length === 0 &&
+    serieCompletate.length === 0 &&
+    suggestedSeries.length <= 1
+  ) {
+    return (
+      <View style={styles.emptyContainer}>
+        <Ionicons name="tv-outline" size={90} color="#6c2bd9" />
+        <Text style={styles.emptyTitle}>Non hai ancora aggiunto una serie</Text>
+        <Text style={styles.emptySubtitle}>
+          Inizia a creare la tua libreria personale!
+        </Text>
+        <TouchableOpacity
+          style={styles.emptyButton}
+          onPress={() => router.push("/aggiungi")}
+        >
+          <Ionicons name="add" size={20} color="#fff" />
+          <Text style={styles.emptyButtonText}>
+            Aggiungi la tua prima serie
+          </Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -298,14 +345,7 @@ export default function HomeScreen() {
           onPress={() => router.push("/cerca")}
         >
           <Ionicons name="search-outline" size={18} color="#aaa" />
-          <Text style={styles.searchInputText}>Cerca tra le serie</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={() => router.push("/aggiungi")}
-        >
-          <Ionicons name="add" size={20} color="white" />
+          <Text style={styles.searchInputText}>Cerca tra le tue serie</Text>
         </TouchableOpacity>
       </View>
 
@@ -319,7 +359,7 @@ export default function HomeScreen() {
           renderItem={renderItem}
           contentContainerStyle={styles.horizontalList}
           showsHorizontalScrollIndicator={false}
-          ListEmptyComponent={renderEmptyState("Aggiungi una serie in corso")}
+          ListEmptyComponent={renderEmptyState("Aggiungi una Serie in Corso")}
         />
 
         <Text style={styles.sectionTitle}>Serie TV Completate</Text>
@@ -330,7 +370,7 @@ export default function HomeScreen() {
           renderItem={renderItem}
           contentContainerStyle={styles.horizontalList}
           showsHorizontalScrollIndicator={false}
-          ListEmptyComponent={renderEmptyState("Aggiungi una serie completata")}
+          ListEmptyComponent={renderEmptyState("Aggiungi una Serie Completata")}
         />
 
         <Text style={styles.sectionTitle}>Suggeriti per te</Text>
@@ -342,9 +382,8 @@ export default function HomeScreen() {
           contentContainerStyle={styles.horizontalList}
           showsHorizontalScrollIndicator={false}
         />
-        <Button
-          title="Resetta Tutto"
-          color="#ff4444"
+        <TouchableOpacity
+          style={styles.resetButton}
           onPress={() =>
             Alert.alert(
               "Conferma Reset",
@@ -359,8 +398,18 @@ export default function HomeScreen() {
               ]
             )
           }
-        />
+        >
+          <Ionicons name="trash-outline" size={18} color="#fff" />
+          <Text style={styles.resetText}>Resetta tutto</Text>
+        </TouchableOpacity>
       </ScrollView>
+
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={() => router.push("/aggiungi")}
+      >
+        <Ionicons name="add" size={28} color="#fff" />
+      </TouchableOpacity>
     </View>
   );
 }
@@ -386,7 +435,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 14,
     fontWeight: "500",
-    textAlign: "center",
+    textAlign: "left",
     color: "#fff",
     paddingHorizontal: 4,
   },
@@ -417,6 +466,67 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     paddingLeft: 8,
     color: "#fff",
+  },
+  emptyContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#0f0f2a",
+    paddingHorizontal: 24,
+    gap: 12,
+  },
+
+  emptyTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#fff",
+    marginTop: 20,
+  },
+
+  emptySubtitle: {
+    fontSize: 14,
+    color: "#aaa",
+    textAlign: "center",
+    marginHorizontal: 20,
+  },
+  actionCard: {
+    width: 140,
+    height: 210,
+    borderRadius: 12,
+    backgroundColor: "#1e1e3f",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 16,
+    shadowColor: "#000",
+    shadowOpacity: 0.2,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 10,
+    elevation: 5,
+  },
+
+  actionCardText: {
+    marginTop: 10,
+    fontSize: 13,
+    color: "#fff",
+    textAlign: "center",
+    fontWeight: "500",
+  },
+
+  emptyButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#6c2bd9",
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 24,
+    marginTop: 20,
+  },
+
+  emptyButtonText: {
+    color: "#fff",
+    fontSize: 15,
+    fontWeight: "600",
+    marginLeft: 8,
   },
 
   container: {
@@ -449,5 +559,60 @@ const styles = StyleSheet.create({
     backgroundColor: "#6c2bd9",
     padding: 10,
     borderRadius: 12,
+  },
+  imageOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.35)",
+    justifyContent: "flex-end",
+    padding: 10,
+    bottom: 8,
+  },
+  fab: {
+    position: "absolute",
+    bottom: 20,
+    right: 20,
+    backgroundColor: "#6c2bd9",
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: "center",
+    alignItems: "center",
+    elevation: 6,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+  },
+  badge: {
+    backgroundColor: "#6c2bd9",
+    borderRadius: 8,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    alignSelf: "flex-start",
+    marginTop: 6,
+  },
+
+  badgeText: {
+    fontSize: 11,
+    color: "#fff",
+    fontWeight: "500",
+  },
+
+  resetButton: {
+    alignSelf: "center",
+    marginVertical: 20,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    backgroundColor: "#cc4949",
+    borderRadius: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+
+  resetText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "600",
   },
 });

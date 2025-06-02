@@ -13,18 +13,22 @@ import {
 import HeaderSearchBar from "./components/headerSearchBar"; 
 import { useFocusEffect } from "@react-navigation/native";
 export default function SearchScreen() {
+
+  // stati per filtri ricerca
   const [titolo, setTitolo] = useState("");
   const [categoria, setCategoria] = useState("");
   const [piattaforma, setPiattaforma] = useState("");
   const [stato, setStato] = useState("");
 
+  // stati per dati caricati
   const [serie, setSerie] = useState<any[]>([]);
   const [categorie, setCategorie] = useState<string[]>([]);
   const [piattaforme, setPiattaforme] = useState<string[]>([]);
 
+  // navigazione
   const router = useRouter();
 
-  // Carica le categorie solo una volta
+  // Caricamento iniziale di categorie e piattaforme
   useEffect(() => {
     const caricaCategorie = async () => {
       const categorieRaw = await AsyncStorage.getItem("categorie_dati");
@@ -38,6 +42,8 @@ export default function SearchScreen() {
     caricaCategorie();
   }, []);
 
+
+   // ogni volta che torno su questa schermata ricarico le serie
   useFocusEffect(
     React.useCallback(() => {
       const caricaSerie = async () => {
@@ -50,6 +56,8 @@ export default function SearchScreen() {
     }, [])
   );
 
+
+  //filtra in base ai filtri selezionati
   const filtrate = serie.filter((s) => {
     return (
       s.titolo?.toLowerCase().includes(titolo.toLowerCase()) &&
@@ -59,6 +67,7 @@ export default function SearchScreen() {
     );
   });
 
+  // gestisce il path corretto per l'immagine (che può essere presa dalla galleria, da tmdb o un placeholder)
   const getPosterUri = (posterPath?: string, fallback?: string) => {
     if (!posterPath)
       return fallback || "https://via.placeholder.com/120x180?text=?";
@@ -69,6 +78,8 @@ export default function SearchScreen() {
     return fallback || "https://via.placeholder.com/120x180?text=?";
   };
 
+
+  // render della card della singola serie
   const renderItem = ({ item }: any) => (
     <TouchableOpacity
       style={styles.card}
@@ -101,10 +112,12 @@ export default function SearchScreen() {
 
         <Text style={styles.label}>Genere</Text>
         <View style={styles.tagsContainer}>
+             {/* crea un bottone per ogni categoria*/}
           {categorie.map((cat) => (
             <TouchableOpacity
               key={cat}
-              onPress={() => setCategoria(cat === categoria ? "" : cat)}
+              onPress={() => setCategoria(cat === categoria ? "" : cat)}  
+               /*Quando cliccato, se è già selezionato, lo deseleziona (setCategoria("")), altrimenti lo seleziona (setCategoria(cat)) */
               style={[styles.tag, categoria === cat && styles.tagSelected]}
             >
               <Text style={styles.tagText}>{cat}</Text>
@@ -113,7 +126,8 @@ export default function SearchScreen() {
         </View>
 
         <Text style={styles.label}>Piattaforma</Text>
-        <View style={styles.tagsContainer}>
+        <View style={styles.tagsContainer}>  
+        {/* crea un bottone per ogni piattaforma */}
           {piattaforme.map((p) => (
             <TouchableOpacity
               key={p}
@@ -141,6 +155,7 @@ export default function SearchScreen() {
         <Text style={[styles.label, { marginTop: 20 }]}>
           Risultati trovati: {filtrate.length}
         </Text>
+          {/* lista serie */}
         <FlatList
           data={filtrate}
           keyExtractor={(item, index) => item.id || item.titolo + index}

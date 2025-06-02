@@ -3,6 +3,8 @@ import * as FileSystem from "expo-file-system";
 import * as ImagePicker from "expo-image-picker";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
+import categorieHardcoded from "../assets/data/categorie.json";
+
 import {
   Image,
   KeyboardAvoidingView,
@@ -16,7 +18,7 @@ import {
   View,
 } from "react-native";
 import { isFavorite, saveFavorite } from "./_utils/favoritesStorage";
-import { TMDB_API_TOKEN } from './_utils/tmdb-config';
+import { TMDB_API_TOKEN } from "./_utils/tmdb-config";
 
 export default function ModificaScreen() {
   //stato del poster inserito da locale. Valore stringa o null, stato 0 = null
@@ -149,7 +151,7 @@ export default function ModificaScreen() {
         {
           headers: {
             Authorization: TMDB_API_TOKEN,
-             accept: "application/json",
+            accept: "application/json",
           },
         }
       );
@@ -206,22 +208,42 @@ export default function ModificaScreen() {
   useEffect(() => {
     const caricaCategorie = async () => {
       try {
-        const data = await AsyncStorage.getItem("categorie_dati");
-        if (data) {
-          const parsed = JSON.parse(data);
-          //mappo per ogni genere il suo nome, comparira solo il nome
-          const generi = parsed.generi.map((g: any) => g.nome);
-          //mappo le piattaforme e comparira solo il nome della piattaforma
-          const piattaforme = parsed.piattaforme.map((p: any) => p.nome);
+        // categorie hardcoded da file
+        const hardcoded = categorieHardcoded;
 
-          // se il genere del form non è presente nei generi delle categorie, lo aggiungo temporaneamente
-          if (form.genere && !generi.includes(form.genere)) {
-            generi.push(form.genere);
-          }
-          //setto gli stati dopo il caricamento da asyncstorage
-          setCategorieGeneri(generi);
-          setCategoriePiattaforme(piattaforme);
+        // categorie salvate in AsyncStorage
+        const data = await AsyncStorage.getItem("categorie_dati");
+        const parsed = data
+          ? JSON.parse(data)
+          : { generi: [], piattaforme: [] };
+
+        // unione (eliminando duplicati per nome)
+        const tuttiGeneri = Array.from(
+          new Set([
+            ...parsed.generi.map((g: any) => g.nome),
+            ...hardcoded.generi.map((g: any) => g.nome),
+          ])
+        );
+
+        const tuttePiattaforme = Array.from(
+          new Set([
+            ...parsed.piattaforme.map((p: any) => p.nome),
+            ...hardcoded.piattaforme.map((p: any) => p.nome),
+          ])
+        );
+
+        // aggiungo il genere della serie se non presente
+        if (form.genere && !tuttiGeneri.includes(form.genere)) {
+          tuttiGeneri.push(form.genere);
         }
+
+        // idem per piattaforma
+        if (form.piattaforma && !tuttePiattaforme.includes(form.piattaforma)) {
+          tuttePiattaforme.push(form.piattaforma);
+        }
+
+        setCategorieGeneri(tuttiGeneri);
+        setCategoriePiattaforme(tuttePiattaforme);
       } catch (err) {
         console.error("Errore nel caricamento categorie:", err);
       }

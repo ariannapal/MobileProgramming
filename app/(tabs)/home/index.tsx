@@ -4,7 +4,6 @@ import { useFocusEffect } from "@react-navigation/native";
 import { useRouter } from "expo-router";
 import React, { useCallback, useState } from "react";
 import {
-  Alert,
   FlatList,
   Image,
   ScrollView,
@@ -41,11 +40,9 @@ type Serie = {
 };
 
 export default function HomeScreen() {
-  //stato per il rendering delle serie in corso
+  //stati per serie viste, completate suggerite
   const [serieViste, setSerieViste] = useState<Serie[]>([]);
-  //stato per il rendering delle serie completate
   const [serieCompletate, setSerieCompletate] = useState<Serie[]>([]);
-  //stato per il rendering delle serie suggerite
   const [suggestedSeries, setSuggestedSeries] = useState<Serie[]>([
     //stato iniziale, vuoto con la scheda di scoperta nuova serie
     { id: "loadMore", titolo: "Scopri una Nuova Serie" },
@@ -117,26 +114,6 @@ export default function HomeScreen() {
     }, [])
   );
 
-  // resetta asynchstorage
-  const resetAppData = async () => {
-    try {
-      await AsyncStorage.clear(); // Elimina tutti i dati salvati
-
-      console.log("Tutti i dati dell'app sono stati cancellati.");
-      Alert.alert("Reset completato", "Tutti i dati sono stati eliminati");
-
-      // Pulisce lo stato locale per mostrare subito l'effetto
-      setSerieViste([]);
-      setSerieCompletate([]);
-      setSuggestedSeries([
-        { id: "loadMore", titolo: "Scopri una Nuova Serie" },
-      ]);
-    } catch (error) {
-      console.error("Errore durante il reset dei dati:", error);
-      Alert.alert("Errore", "Non è stato possibile eliminare i dati");
-    }
-  };
-
   //prendo una serie TV casuale dalle più votate
   //diventa un oggetto serie, la salvo in AsyncStorage
   //aggiungo ai suggerimenti
@@ -190,6 +167,16 @@ export default function HomeScreen() {
       }
 
       const nuovaSerie = dettagli;
+      // Leggo elenco esistente da AsyncStorage
+      const existingData = await AsyncStorage.getItem("serie.json");
+      const lista: Serie[] = existingData ? JSON.parse(existingData) : [];
+
+      if (!lista.some((s) => s.id === nuovaSerie.id)) {
+        const aggiornata = [...lista, nuovaSerie];
+
+        //salvo su AsyncStorage
+        await AsyncStorage.setItem("serie.json", JSON.stringify(aggiornata));
+      }
 
       // Aggiorna stato locale
       //prendo la serie nuova inserita e quelle precedenti eccetto la card load more
@@ -521,23 +508,5 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: "#fff",
     fontWeight: "500",
-  },
-
-  resetButton: {
-    alignSelf: "center",
-    marginVertical: 20,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    backgroundColor: "#cc4949",
-    borderRadius: 20,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-
-  resetText: {
-    color: "#fff",
-    fontSize: 14,
-    fontWeight: "600",
   },
 });

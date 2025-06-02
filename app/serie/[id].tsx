@@ -18,8 +18,9 @@ import {
 } from "react-native";
 import Animated, { FadeInUp } from "react-native-reanimated";
 
-import { SafeAreaView } from "react-native-safe-area-context";
-import StarRating from "react-native-star-rating-widget";
+import { SafeAreaView } from "react-native-safe-area-context"; // Per evitare sovrapposizioni con le aree non sicure
+import StarRating from "react-native-star-rating-widget"; // Componente per rating con stelle
+// Funzioni di utilità per la gestione dei preferiti
 import {
   isFavorite,
   removeFavorite,
@@ -28,24 +29,35 @@ import {
 
 import SeasonPicker from "./SeasonPicker"; // adatta il path se necessario
 
+// Componente principale che mostra i dettagli di una serie TV
 export default function SerieDettaglioScreen() {
+  // Stato per immagine personalizzata (base64)
   const [imageBase64, setImageBase64] = useState<string | null>(null);
   const [isFav, setIsFav] = useState(false);
+
+  // Recupero parametro `id` dalla route (URL)
   const { id } = useLocalSearchParams();
   const idString = Array.isArray(id) ? id[0] : id;
-  const router = useRouter();
-  const [userRating, setUserRating] = useState<number | null>(null);
 
-  const [serie, setSerie] = useState<any | null>(null);
-  const [stagioneSelezionata, setStagioneSelezionata] = useState<number | null>(
-    null
-  );
+  // Hook per navigare tra schermate
+  const router = useRouter();
+
+  const [userRating, setUserRating] = useState<number | null>(null);   // Voto dell'utente
+
+  const [serie, setSerie] = useState<any | null>(null); // Dati della serie
+
+  const [stagioneSelezionata, setStagioneSelezionata] = useState<number | null>(null); // Stagione visualizzata
+
+  // Episodi visti per stagione
   const [episodiVistiData, setEpisodiVistiData] = useState<{
     [stagione: string]: { [episodio: number]: boolean };
   }>({});
+
   const [completamentoPercentuale, setCompletamentoPercentuale] = useState(0);
   const [episodiVisti, setEpisodiVisti] = useState(0);
   const [episodiTotali, setEpisodiTotali] = useState(0);
+
+  // Caricamento dell'immagine se è un file locale
   useEffect(() => {
     const loadBase64 = async () => {
       if (serie?.poster_path?.startsWith("file://")) {
@@ -62,6 +74,7 @@ export default function SerieDettaglioScreen() {
     loadBase64();
   }, [serie]);
 
+  // Carica la serie selezionata da AsyncStorage in base all'ID
   useEffect(() => {
     const fetchSerie = async () => {
       const data = await AsyncStorage.getItem("serie.json");
@@ -74,12 +87,14 @@ export default function SerieDettaglioScreen() {
     fetchSerie();
   }, [id]);
 
+  // Verifica se è tra i preferiti
   useEffect(() => {
     if (serie) {
       isFavorite(serie.id).then((fav) => setIsFav(fav));
     }
   }, [serie]);
 
+  // Caricamento degli episodi visti dal salvataggio
   useEffect(() => {
     const loadEpisodi = async () => {
       if (serie) {
@@ -90,6 +105,8 @@ export default function SerieDettaglioScreen() {
     };
     loadEpisodi();
   }, [serie]);
+
+  // Carica il voto dell’utente se presente
   useEffect(() => {
     const loadRating = async () => {
       const stored = await AsyncStorage.getItem(`userRating-${serie?.id}`);
@@ -98,12 +115,14 @@ export default function SerieDettaglioScreen() {
     if (serie) loadRating();
   }, [serie]);
 
+  // Salva il voto quando viene aggiornato
   useEffect(() => {
     if (userRating !== null && serie) {
       AsyncStorage.setItem(`userRating-${serie.id}`, String(userRating));
     }
   }, [userRating]);
 
+  // Funzione per segnare un episodio come visto/non visto
   const toggleEpisodioVisto = async (index: number) => {
     if (!serie || stagioneSelezionata === null) return;
 
@@ -125,7 +144,7 @@ export default function SerieDettaglioScreen() {
     const key = `episodiVisti-${serie.id}`;
     await AsyncStorage.setItem(key, JSON.stringify(updatedData));
 
-    // Verifica se tutte le stagioni sono completate
+    // Calcola se tutte le stagioni sono completate
     const tutteLeStagioniComplete = serie.stagioniDettagli.every(
       (stagione: any) => {
         const key = `s${stagione.stagione}`;
@@ -136,6 +155,7 @@ export default function SerieDettaglioScreen() {
 
     const nuovoStato = tutteLeStagioniComplete ? "Completata" : "In corso";
 
+    // Aggiorna lo stato nella serie e nel file JSON
     if (serie.stato !== nuovoStato) {
       const data = await AsyncStorage.getItem("serie.json");
       if (!data) return;
@@ -150,6 +170,7 @@ export default function SerieDettaglioScreen() {
     }
   };
 
+  // Gestione aggiunta/rimozione dai preferiti
   const toggleFavorite = async () => {
     if (!serie) return;
 
@@ -165,6 +186,7 @@ export default function SerieDettaglioScreen() {
     setIsFav(updated);
   };
 
+  // Calcola percentuale completamento in base agli episodi visti
   useEffect(() => {
     if (serie && serie.stagioniDettagli) {
       let visti = 0;
@@ -187,6 +209,7 @@ export default function SerieDettaglioScreen() {
     }
   }, [serie, episodiVistiData]);
 
+  // Funzione per eliminare la serie (con conferma)
   const deleteSerie = () => {
     Alert.alert(
       "Conferma eliminazione",
@@ -218,16 +241,18 @@ export default function SerieDettaglioScreen() {
             await AsyncStorage.removeItem(`episodiVisti-${serie.id}`);
             console.log("Dati episodi rimossi");
 
+            // Rimuove dati episodi e preferiti
             await removeFavorite(serie.id);
             console.log("Serie rimossa dai preferiti");
 
-            router.back();
+            router.back(); // Torna alla schermata precedente
           },
         },
       ]
     );
   };
 
+  // Se la serie non è stata ancora caricata, mostra un messaggio di caricamento
   if (!serie) {
     return (
       <View style={styles.center}>
@@ -236,26 +261,32 @@ export default function SerieDettaglioScreen() {
     );
   }
 
+  // Recupera le stagioni della serie, oppure un array vuoto se mancano
   const stagioni = serie?.stagioniDettagli ?? [];
+
+  // Recupera il numero di episodi della stagione attualmente selezionata
   const episodiStagioneCorrente =
     stagioni.find((s: any) => s.stagione === stagioneSelezionata)?.episodi ?? 0;
 
+  // Recupera gli episodi visti per la stagione corrente
   const episodiAttivi =
     stagioneSelezionata !== null
       ? episodiVistiData[`s${stagioneSelezionata}`] || {}
       : {};
-  console.log("serie.poster_path", serie.poster_path);
+  // console.log("serie.poster_path", serie.poster_path);
+
+  // Determina l'URI dell'immagine da visualizzare (online, locale o segnaposto)
   const imageUri = (() => {
     if (!serie.poster_path)
-      return "https://via.placeholder.com/342x480?text=No+Image";
+      return "https://via.placeholder.com/342x480?text=No+Image"; // fallback
     if (serie.poster_path.startsWith("file://"))
       return `${serie.poster_path}?timestamp=${Date.now()}`; // forzo reload cache
     if (serie.poster_path.startsWith("/"))
-      return `https://image.tmdb.org/t/p/w342${serie.poster_path}`;
-    return serie.poster_path;
+      return `https://image.tmdb.org/t/p/w342${serie.poster_path}`; // URL TMDb
+    return serie.poster_path; // URL completo già pronto
   })();
 
-  console.log("Visualizzo immagine con URI:", imageUri);
+  // console.log("Visualizzo immagine con URI:", imageUri);
 
   return (
     <View style={{ flex: 1 }}>
@@ -266,6 +297,8 @@ export default function SerieDettaglioScreen() {
       />
       <SafeAreaView style={{ flex: 1, backgroundColor: "#0f0f2a" }}>
         <ScrollView style={styles.container}>
+
+          {/* Header con tasto Indietro e (se non è suggerita) tasto Modifica */}
           <View style={[styles.back, { justifyContent: "space-between" }]}>
             <Pressable
               onPress={() => router.back()}
@@ -274,6 +307,8 @@ export default function SerieDettaglioScreen() {
               <Ionicons name="chevron-back" size={24} color="#fff" />
               <Text style={styles.backText}>Indietro</Text>
             </Pressable>
+
+            {/* Se la serie non è "suggerita", consente la modifica */}
             {serie.stato !== "suggerita" && (
               <Pressable
                 onPress={() => {
@@ -298,11 +333,13 @@ export default function SerieDettaglioScreen() {
             )}
           </View>
 
+          {/* Immagine della serie */}
           <Image
             source={{ uri: imageBase64 || imageUri }}
             style={styles.poster}
           />
 
+          {/* Titolo e pulsante preferito */}
           <View style={styles.titleRow}>
             <Text style={styles.title}>{serie.titolo}</Text>
             <TouchableOpacity onPress={toggleFavorite}>
@@ -315,6 +352,7 @@ export default function SerieDettaglioScreen() {
             </TouchableOpacity>
           </View>
 
+          {/* Anno e stato della serie (Completata / In corso) */}
           <Text style={styles.meta}>
             {serie.anno}
             {serie.stato !== "suggerita" && (
@@ -331,6 +369,7 @@ export default function SerieDettaglioScreen() {
             )}
           </Text>
 
+          {/* Barra di progresso della visione */}
           <View style={{ marginVertical: 10 }}>
             <View
               style={{
@@ -358,6 +397,7 @@ export default function SerieDettaglioScreen() {
             </Text>
           </View>
 
+          {/* Valutazione dell'utente con stelle */}
           {serie?.stato !== "suggerita" && (
             <>
               <Text style={styles.sectionTitle}>Il tuo voto</Text>
@@ -374,37 +414,13 @@ export default function SerieDettaglioScreen() {
             </>
           )}
 
+          {/* Trama della serie */}
           <Text style={styles.sectionTitle}>Trama</Text>
           <Text style={styles.desc}>
             {serie.trama ?? "Trama non disponibile."}
           </Text>
 
-          {serie.stato === "suggerita" && (
-            <TouchableOpacity
-              style={styles.startButton}
-              onPress={() => {
-                router.push({
-                  pathname: "/modifica",
-                  params: {
-                    id: serie.id,
-                    titolo: serie.titolo,
-                    overview: serie.trama,
-                    genere: serie.genere,
-                    piattaforma: serie.piattaforma,
-                    poster_path: serie.poster_path,
-                    rating: serie.rating,
-                    anno: serie.anno,
-                    stato: "suggerita", // ancora suggerita
-                    stagioni: JSON.stringify(serie.stagioniDettagli ?? []),
-                    episodi: "",
-                  },
-                });
-              }}
-            >
-              <Text style={styles.startButtonText}>Inizia a guardare</Text>
-            </TouchableOpacity>
-          )}
-
+          {/* Picker per selezionare la stagione e lista episodi */}
           {stagioni.length > 0 && serie.stato !== "suggerita" && (
             <>
               <SeasonPicker
@@ -444,13 +460,48 @@ export default function SerieDettaglioScreen() {
               )}
             </>
           )}
+
+          <View style={styles.buttonsRow}>
+          {/* Bottone per iniziare a guardare la serie (se è solo suggerita) */}
+          {serie.stato === "suggerita" && (
+            <TouchableOpacity
+              style={styles.startButton}
+              onPress={() => {
+                router.push({
+                  pathname: "/modifica",
+                  params: {
+                    id: serie.id,
+                    titolo: serie.titolo,
+                    overview: serie.trama,
+                    genere: serie.genere,
+                    piattaforma: serie.piattaforma,
+                    poster_path: serie.poster_path,
+                    rating: serie.rating,
+                    anno: serie.anno,
+                    stato: "suggerita", // ancora suggerita
+                    stagioni: JSON.stringify(serie.stagioniDettagli ?? []),
+                    episodi: "",
+                  },
+                });
+              }}
+            >
+              <Ionicons name="play-outline" size={18} color="#fff" />
+              <Text style={styles.startButtonText}>Inizia a guardare</Text>
+
+            </TouchableOpacity>
+          )}
+
+          {/* Bottone per eliminare la serie */}
           <TouchableOpacity onPress={deleteSerie} style={styles.resetButton}>
             <Ionicons name="trash-outline" size={18} color="#fff" />
             <Text style={styles.resetText}>Elimina Serie</Text>
           </TouchableOpacity>
+        </View>
         </ScrollView>
       </SafeAreaView>
+      
     </View>
+    
   );
 }
 
@@ -583,16 +634,20 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   startButton: {
-    backgroundColor: "#4CAF50",
-    padding: 12,
-    borderRadius: 10,
-    marginTop: 10,
+    alignSelf: "center",
+    marginVertical: 20,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    backgroundColor: "#4CAF50", // verde vivo
+    borderRadius: 20,
+    flexDirection: "row",
     alignItems: "center",
+    gap: 8,
   },
   startButtonText: {
     color: "#fff",
-    fontWeight: "bold",
-    fontSize: 16,
+    fontSize: 14,
+    fontWeight: "600",
   },
   episodioLabel: {
     color: "#fff",
@@ -604,5 +659,11 @@ const styles = StyleSheet.create({
     backgroundColor: "#2e2e5a",
     borderWidth: 1.5,
     borderColor: "#6c2bd9",
+  },
+  buttonsRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 12, 
+    marginVertical: 20,
   },
 });

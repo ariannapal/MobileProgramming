@@ -103,46 +103,69 @@ const CategorieScreen = () => {
     useCallback(() => {
       const caricaCategorie = async () => {
         try {
-          //prendo tutte le categorie salvate
-          const salvate = await AsyncStorage.getItem(STORAGE_KEY);
-          if (salvate) {
-            //aggiorno lo stato facendo parsing
-            setCategorie(JSON.parse(salvate));
-          } else {
-            //se non ce ne sono prendo quelle hardcoded e le salvo nell'asyncstorage
-            setCategorie(categorieJson);
-            await AsyncStorage.setItem(
-              STORAGE_KEY,
-              JSON.stringify(categorieJson)
-            );
+          // Carica categorie salvate
+          const salvateRaw = await AsyncStorage.getItem(STORAGE_KEY);
+          const salvate = salvateRaw
+            ? JSON.parse(salvateRaw)
+            : { piattaforme: [], generi: [] };
+
+          // Hardcoded da categorie.json
+          const hardcoded = categorieJson;
+
+          let modificato = false;
+
+          // Unione dei generi senza duplicati (in base al nome)
+          const nomiGeneriSalvati = salvate.generi.map((g: any) => g.nome);
+          const nuoviGeneri = hardcoded.generi.filter(
+            (g: any) => !nomiGeneriSalvati.includes(g.nome)
+          );
+          if (nuoviGeneri.length > 0) {
+            salvate.generi = [...salvate.generi, ...nuoviGeneri];
+            modificato = true;
           }
 
-          // Carica le serie per fare il conteggio
+          // Unione delle piattaforme senza duplicati (in base al nome)
+          const nomiPiattaformeSalvate = salvate.piattaforme.map(
+            (p: any) => p.nome
+          );
+          const nuovePiattaforme = hardcoded.piattaforme.filter(
+            (p: any) => !nomiPiattaformeSalvate.includes(p.nome)
+          );
+          if (nuovePiattaforme.length > 0) {
+            salvate.piattaforme = [...salvate.piattaforme, ...nuovePiattaforme];
+            modificato = true;
+          }
+
+          // Se ci sono modifiche, aggiorna AsyncStorage
+          if (modificato) {
+            await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(salvate));
+          }
+
+          // Aggiorna stato categorie
+          setCategorie(salvate);
+
+          // --- PARTE SERIE E CONTEGGI ---
+
           const serieSalvate = await AsyncStorage.getItem(SERIE_KEY);
           const parsedSerie = serieSalvate ? JSON.parse(serieSalvate) : [];
 
-          //inizializzo due variabili record per inserirli nello stato dopo
           const conteggiGeneri: Record<string, number> = {};
           const conteggiPiattaforme: Record<string, number> = {};
 
-          //scorro le seire nle parsing e salto quelle nei suggeriti
           for (const serie of parsedSerie) {
-            if (serie.stato === "suggerita") {
-              continue; // Salta questa serie
-            }
-            //incremento i conteggi in ConteggiGeneri
+            if (serie.stato === "suggerita") continue;
+
             if (serie.genere) {
-              //accedo alla chiave, se non esiste la setto a 0 + 1
-              //se esiste prendo il conteggio di prima + 1
               conteggiGeneri[serie.genere] =
                 (conteggiGeneri[serie.genere] || 0) + 1;
             }
+
             if (serie.piattaforma) {
               conteggiPiattaforme[serie.piattaforma] =
                 (conteggiPiattaforme[serie.piattaforma] || 0) + 1;
             }
           }
-          //setto lo stato
+
           setConteggi({
             generi: conteggiGeneri,
             piattaforme: conteggiPiattaforme,
